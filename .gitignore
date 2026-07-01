@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# runtime file uploads (served from public/uploads at runtime)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
 # production
 /build
 

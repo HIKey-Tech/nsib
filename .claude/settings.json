@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd c:/Users/david/nsib-site && find node_modules/next/dist/docs -iname \"*public*\" | head; echo \"===\"; sed -n '1,60p' node_modules/next/dist/docs/01-app/03-api-reference/*public* 2>/dev/null; ls node_modules/next/dist/docs/01-app/03-api-reference/ 2>/dev/null)",
+      "Bash(rm -f src/lib/supabase.ts nsib_schema.sql)",
+      "Bash(grep -rn \"supabase\" src/)",
+      "Bash(docker compose *)",
+      "Bash(node scripts/test-2fa.mjs)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(node scripts/test-analytics.mjs)",
+      "Bash(cp /tmp/seed-news.mjs ./seed-news-tmp.mjs)",
+      "Bash(node seed-news-tmp.mjs)",
+      "Bash(rm -f seed-news-tmp.mjs)",
+      "Bash(docker compose exec -T db psql -U nsib -d nsib -c ' *)",
+      "Bash(grep -nE \"^const [A-Za-z]+ ?\\(:|=\\) ?\\\\[|= \\\\[$|\\\\bconst .*= \\\\[\" src/app/page.tsx)",
+      "Bash(rm -f public/uploads/publications/*.pdf)",
+      "Bash(node -p \"require\\('next/package.json'\\).version\")",
+      "Bash(grep -E \"^\\\\.env$\")",
+      "Bash(grep -rioE \"\\(\\\\+?234[0-9 -]{6,}|[a-z0-9._-]+@[a-z0-9.-]+\\\\.[a-z]{2,}|\\(No\\\\.?\\\\s*\\)?[0-9]+[^,<]{0,40}\\(Street|Road|Avenue|Close|Way|District|Abuja|Lagos\\)|facebook\\\\.com/[a-z0-9._-]+|\\(twitter|x\\)\\\\.com/[a-z0-9._-]+|instagram\\\\.com/[a-z0-9._-]+\\)\" \"c:/Users/david/nsib-site/src/app/contact-us/page.tsx\" \"c:/Users/david/nsib-site/src/components/layout/PublicShell.tsx\")",
+      "Bash(echo \"=== tsc exit: $? ===\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\david\\nsib-site\\node_modules\\next\\dist\\docs\\01-app\\03-api-reference"
+    ]
+  }
+}

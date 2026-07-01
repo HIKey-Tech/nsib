@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { FadeIn, StaggerContainer, StaggerItem, ScaleHover } from "@/components/ui/MotionWrapper";
 import styles from "./operations-centre.module.css";
+import { pageMeta } from "@/lib/site";
+
+export const metadata = pageMeta({
+  title: "Operations Centre",
+  description:
+    "The NSIB digital operations hub — live flight tracking, marine vessel tracking, accident reporting and the online learning centre in one place.",
+  path: "/operations-centre",
+});
 
 const tools = [
   {

@@ -11,10 +11,16 @@ type NewsCategory = "general" | "safety" | "aviation" | "maritime" | "railway" |
 
 interface Report {
   id: string;
+  report_no: string;
   title: string;
   type: ReportType;
   sector: Sector;
-  description: string;
+  report_status: string | null;
+  operator: string | null;
+  reg_no: string | null;
+  vehicle_type: string | null;
+  train_name: string | null;
+  occurrence: string | null;
   file_url: string;
   file_name: string;
   file_size: number;
@@ -23,6 +29,35 @@ interface Report {
   status: string;
   uploader_name: string;
 }
+
+const REPORT_STATUSES = ["Preliminary Report", "Interim Statement", "Final Report", "Safety Advisory"];
+
+interface Publication {
+  id: string;
+  title: string;
+  category: string;
+  reference_no: string | null;
+  status: string | null;
+  file_url: string;
+  published_at: string;
+  uploader_name: string;
+}
+
+const PUB_CATEGORIES = [
+  { value: "legislation", label: "Legislation" },
+  { value: "mou", label: "MoU" },
+  { value: "form", label: "Form / Checklist" },
+  { value: "manual", label: "Investigation Manual" },
+  { value: "foi", label: "FOI Document" },
+  { value: "general", label: "General" },
+];
+
+// Per-sector field labels, matching the client's exact column names.
+const FIELD_LABELS: Record<Sector, { operator: string; reg: string; vtype: string }> = {
+  aviation: { operator: "Aircraft Operator", reg: "Reg No", vtype: "Aircraft Type" },
+  maritime: { operator: "Operator", reg: "Vessel/Craft No", vtype: "Vessel Type" },
+  railway: { operator: "Train Operator", reg: "Reg No", vtype: "Train Type" },
+};
 
 interface NewsItem {
   id: string;
@@ -42,17 +77,28 @@ interface User {
   role: string;
 }
 
+interface ManagedUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  totp_enabled: boolean;
+  created_at: string;
+}
+
+interface Analytics {
+  totals: { views: number; unique_visitors: number; news_views: number; downloads: number };
+  byDay: { day: string; count: number }[];
+  topPages: { path: string; count: number }[];
+  topNews: { id: string; title: string; count: number }[];
+  topReports: { id: string; title: string; sector: string; count: number }[];
+  sectorDownloads: { sector: string; count: number }[];
+}
+
 const SECTORS = [
   { value: "aviation", label: "Aviation", color: "#1B2A6B", icon: "✈" },
   { value: "maritime", label: "Maritime", color: "#0077B6", icon: "⚓" },
   { value: "railway", label: "Railway", color: "#6A0572", icon: "🚆" },
-];
-
-const REPORT_TYPES = [
-  { value: "preliminary", label: "Preliminary" },
-  { value: "final", label: "Final" },
-  { value: "interim", label: "Interim" },
-  { value: "safety_bulletin", label: "Safety Bulletin" },
 ];
 
 const NEWS_CATEGORIES = [
@@ -79,6 +125,47 @@ function formatDate(dateStr: string): string {
   });
 }
 
+const ROWS_PER_PAGE = 10;
+
+function Pager({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  const btn = (active: boolean): React.CSSProperties => ({
+    minWidth: 34, height: 34, padding: "0 0.5rem", borderRadius: 8,
+    border: active ? "1.5px solid #1B2A6B" : "1.5px solid #E2E8F0",
+    background: active ? "#1B2A6B" : "white", color: active ? "white" : "#1B2A6B",
+    fontWeight: active ? 700 : 500, fontSize: "0.85rem", cursor: "pointer",
+  });
+  return (
+    <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginTop: "1.25rem" }}>
+      <button style={{ ...btn(false), opacity: page === 1 ? 0.4 : 1, cursor: page === 1 ? "not-allowed" : "pointer" }} disabled={page === 1} onClick={() => onChange(page - 1)}>‹</button>
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+        <button key={n} style={btn(n === page)} onClick={() => onChange(n)}>{n}</button>
+      ))}
+      <button style={{ ...btn(false), opacity: page === totalPages ? 0.4 : 1, cursor: page === totalPages ? "not-allowed" : "pointer" }} disabled={page === totalPages} onClick={() => onChange(page + 1)}>›</button>
+    </div>
+  );
+}
+
+function RankBars({ items }: { items: { label: string; count: number; tag?: string }[] }) {
+  const max = Math.max(1, ...items.map((i) => i.count));
+  return (
+    <div className={styles.rankList}>
+      {items.map((it, i) => (
+        <div key={i} className={styles.rankRow}>
+          <div className={styles.rankLabel} title={it.label}>
+            {it.tag && <span className={styles.rankTag}>{it.tag}</span>}
+            <span className={styles.rankText}>{it.label}</span>
+          </div>
+          <div className={styles.rankBarTrack}>
+            <div className={styles.rankBarFill} style={{ width: `${(it.count / max) * 100}%` }} />
+          </div>
+          <span className={styles.rankCount}>{it.count.toLocaleString()}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +176,43 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState<Report[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
-  const [activeSection, setActiveSection] = useState<"overview" | "upload" | "reports" | "news" | "manage-news" | "events">("overview");
+  const [reportsPage, setReportsPage] = useState(1);
+  const [newsPage, setNewsPage] = useState(1);
+  const [pubsPage, setPubsPage] = useState(1);
+  const [activeSection, setActiveSection] = useState<"overview" | "analytics" | "upload" | "reports" | "news" | "manage-news" | "events" | "publications" | "users">("overview");
+
+  // Users management (admin only)
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersFetched, setUsersFetched] = useState(false);
+  const [usersError, setUsersError] = useState("");
+  // Create-user form
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState("staff");
+  const [newUserSubmitting, setNewUserSubmitting] = useState(false);
+  const [newUserError, setNewUserError] = useState("");
+  const [newUserSuccess, setNewUserSuccess] = useState("");
+
+  // Publications state
+  const [pubs, setPubs] = useState<Publication[]>([]);
+  const [pubsLoading, setPubsLoading] = useState(false);
+  const [pubsFetched, setPubsFetched] = useState(false);
+  const [pubTitle, setPubTitle] = useState("");
+  const [pubCategory, setPubCategory] = useState("legislation");
+  const [pubRef, setPubRef] = useState("");
+  const [pubStatus, setPubStatus] = useState("");
+  const [pubDate, setPubDate] = useState(new Date().toISOString().split("T")[0]);
+  const [pubFile, setPubFile] = useState<File | null>(null);
+  const [pubSubmitting, setPubSubmitting] = useState(false);
+  const [pubError, setPubError] = useState("");
+  const [pubSuccess, setPubSuccess] = useState("");
+  const pubFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Analytics state
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // News state
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -182,10 +305,13 @@ export default function DashboardPage() {
 
   // Upload form state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadTitle, setUploadTitle] = useState("");
   const [uploadSector, setUploadSector] = useState<Sector>("aviation");
-  const [uploadType, setUploadType] = useState<ReportType>("final");
-  const [uploadDesc, setUploadDesc] = useState("");
+  const [uploadOperator, setUploadOperator] = useState("");
+  const [uploadRegNo, setUploadRegNo] = useState("");
+  const [uploadVehicleType, setUploadVehicleType] = useState("");
+  const [uploadTrainName, setUploadTrainName] = useState("");
+  const [uploadOccurrence, setUploadOccurrence] = useState("");
+  const [uploadStatus, setUploadStatus] = useState("Final Report");
   const [uploadDate, setUploadDate] = useState(new Date().toISOString().split("T")[0]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -228,6 +354,82 @@ export default function DashboardPage() {
     setNewsLoading(false);
   }, []);
 
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch("/api/analytics");
+      const data = await res.json();
+      if (res.ok) setAnalytics(data);
+    } catch (e) {
+      console.error("Failed to fetch analytics", e);
+    }
+    setAnalyticsLoading(false);
+  }, []);
+
+  const fetchPubs = useCallback(async () => {
+    setPubsLoading(true);
+    try {
+      const res = await fetch("/api/publications?limit=200");
+      const data = await res.json();
+      if (data.publications) setPubs(data.publications);
+    } catch (e) {
+      console.error("Failed to fetch publications", e);
+    }
+    setPubsLoading(false);
+    setPubsFetched(true);
+  }, []);
+
+  const handlePubSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pubTitle || !pubFile) {
+      setPubError("A title and a document file are required.");
+      return;
+    }
+    setPubSubmitting(true);
+    setPubError("");
+    setPubSuccess("");
+    try {
+      const fd = new FormData();
+      fd.append("file", pubFile);
+      const upRes = await fetch("/api/publications/upload", { method: "POST", body: fd });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData.error || "File upload failed");
+
+      const res = await fetch("/api/publications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: pubTitle,
+          category: pubCategory,
+          reference_no: pubRef || null,
+          status: pubStatus || null,
+          file_url: upData.url,
+          file_name: upData.name,
+          file_size: upData.size,
+          published_at: new Date(pubDate).toISOString(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to publish");
+      setPubSuccess("Publication posted successfully!");
+      setPubTitle(""); setPubRef(""); setPubStatus(""); setPubFile(null);
+      setPubDate(new Date().toISOString().split("T")[0]);
+      if (pubFileInputRef.current) pubFileInputRef.current.value = "";
+      fetchPubs();
+      setTimeout(() => setPubSuccess(""), 3000);
+    } catch (err) {
+      setPubError(err instanceof Error ? err.message : "Submission failed");
+    }
+    setPubSubmitting(false);
+  };
+
+  const handleDeletePub = async (id: string) => {
+    if (!confirm("Delete this publication? This cannot be undone.")) return;
+    const res = await fetch(`/api/publications/${id}`, { method: "DELETE" });
+    if (res.ok) fetchPubs();
+    else alert("Delete failed");
+  };
+
   useEffect(() => {
     // Check auth
     fetch("/api/auth/me")
@@ -244,6 +446,77 @@ export default function DashboardPage() {
       })
       .catch(() => router.replace("/login"));
   }, [router, fetchReports, fetchNews]);
+
+  // Lazy-load analytics the first time that tab is opened.
+  useEffect(() => {
+    if (activeSection === "analytics" && !analytics && !analyticsLoading) fetchAnalytics();
+  }, [activeSection, analytics, analyticsLoading, fetchAnalytics]);
+
+  // Load publications when that tab is opened (only once).
+  useEffect(() => {
+    if (activeSection === "publications" && !pubsFetched && !pubsLoading) fetchPubs();
+  }, [activeSection, pubsFetched, pubsLoading, fetchPubs]);
+
+  const fetchUsers = useCallback(async () => {
+    setUsersLoading(true);
+    setUsersError("");
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      if (res.ok) setUsers(data.users);
+      else setUsersError(data.error || "Failed to load users");
+    } catch {
+      setUsersError("Failed to load users");
+    } finally {
+      setUsersLoading(false);
+      setUsersFetched(true);
+    }
+  }, []);
+
+  const changeRole = async (id: string, role: string) => {
+    setUsersError("");
+    const res = await fetch(`/api/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    const data = await res.json();
+    if (res.ok) setUsers(prev => prev.map(u => (u.id === id ? data.user : u)));
+    else setUsersError(data.error || "Failed to update role");
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewUserSubmitting(true);
+    setNewUserError("");
+    setNewUserSuccess("");
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: newUserEmail, password: newUserPassword, full_name: newUserName, role: newUserRole }),
+    });
+    const data = await res.json();
+    setNewUserSubmitting(false);
+    if (!res.ok) { setNewUserError(data.error || "Failed to create user"); return; }
+    setUsers(prev => [...prev, data.user]);
+    setNewUserName(""); setNewUserEmail(""); setNewUserPassword(""); setNewUserRole("staff");
+    setNewUserSuccess(`Account created for ${data.user.email}. They must log in and set up 2FA on first sign-in.`);
+    setTimeout(() => setNewUserSuccess(""), 6000);
+  };
+
+  const handleDeleteUser = async (id: string, email: string) => {
+    if (!confirm(`Delete user "${email}"? This cannot be undone.`)) return;
+    setUsersError("");
+    const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (res.ok) setUsers(prev => prev.filter(u => u.id !== id));
+    else setUsersError(data.error || "Failed to delete user");
+  };
+
+  // Load users when the Users tab is opened (admin only, only once).
+  useEffect(() => {
+    if (activeSection === "users" && !usersFetched && !usersLoading) fetchUsers();
+  }, [activeSection, usersFetched, usersLoading, fetchUsers]);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -264,8 +537,8 @@ export default function DashboardPage() {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadFile || !uploadTitle || !uploadSector) {
-      setUploadError("Please fill in all required fields and select a file.");
+    if (!uploadFile || !uploadOccurrence || !uploadSector) {
+      setUploadError("Please provide the occurrence, select a sector, and attach the report file.");
       return;
     }
 
@@ -298,10 +571,13 @@ export default function DashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: uploadTitle,
-          type: uploadType,
           sector: uploadSector,
-          description: uploadDesc,
+          operator: uploadOperator,
+          reg_no: uploadRegNo,
+          vehicle_type: uploadVehicleType,
+          train_name: uploadSector === "railway" ? uploadTrainName : null,
+          occurrence: uploadOccurrence,
+          report_status: uploadStatus,
           file_url: uploadData.url,
           file_name: uploadData.name,
           file_size: uploadData.size,
@@ -316,10 +592,18 @@ export default function DashboardPage() {
         throw new Error(reportData.error || "Failed to save report");
       }
 
-      setUploadSuccess("Report uploaded successfully!");
+      setUploadSuccess(
+        user?.role === "admin"
+          ? `Report published successfully! Report No: ${reportData.report?.report_no || "assigned"}`
+          : `Report submitted for review! Report No: ${reportData.report?.report_no || "assigned"}. An admin will approve it before it appears on the website.`
+      );
       setUploadFile(null);
-      setUploadTitle("");
-      setUploadDesc("");
+      setUploadOperator("");
+      setUploadRegNo("");
+      setUploadVehicleType("");
+      setUploadTrainName("");
+      setUploadOccurrence("");
+      setUploadStatus("Final Report");
       setUploadDate(new Date().toISOString().split("T")[0]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       fetchReports();
@@ -343,6 +627,16 @@ export default function DashboardPage() {
     } else {
       const data = await res.json();
       alert(data.error || "Delete failed");
+    }
+  };
+
+  const approveReport = async (id: string) => {
+    const res = await fetch(`/api/reports/${id}`, { method: "PATCH" });
+    if (res.ok) {
+      setReports(prev => prev.map(r => r.id === id ? { ...r, status: "published" } : r));
+    } else {
+      const data = await res.json();
+      alert(data.error || "Approve failed");
     }
   };
 
@@ -424,6 +718,18 @@ export default function DashboardPage() {
     );
   }
 
+  const reportsTotalPages = Math.max(1, Math.ceil(reports.length / ROWS_PER_PAGE));
+  const reportsPageC = Math.min(reportsPage, reportsTotalPages);
+  const pagedReports = reports.slice((reportsPageC - 1) * ROWS_PER_PAGE, reportsPageC * ROWS_PER_PAGE);
+
+  const newsTotalPages = Math.max(1, Math.ceil(news.length / ROWS_PER_PAGE));
+  const newsPageC = Math.min(newsPage, newsTotalPages);
+  const pagedNewsRows = news.slice((newsPageC - 1) * ROWS_PER_PAGE, newsPageC * ROWS_PER_PAGE);
+
+  const pubsTotalPages = Math.max(1, Math.ceil(pubs.length / ROWS_PER_PAGE));
+  const pubsPageC = Math.min(pubsPage, pubsTotalPages);
+  const pagedPubs = pubs.slice((pubsPageC - 1) * ROWS_PER_PAGE, pubsPageC * ROWS_PER_PAGE);
+
   return (
     <div className={styles.page}>
       {/* Sidebar */}
@@ -451,6 +757,15 @@ export default function DashboardPage() {
             Overview
           </button>
           <button
+            className={`${styles.navItem} ${activeSection === "analytics" ? styles.navItemActive : ""}`}
+            onClick={() => setActiveSection("analytics")}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            Analytics
+          </button>
+          <button
             className={`${styles.navItem} ${activeSection === "upload" ? styles.navItemActive : ""}`}
             onClick={() => setActiveSection("upload")}
           >
@@ -468,6 +783,7 @@ export default function DashboardPage() {
             </svg>
             Manage Reports
           </button>
+          {user?.role === "admin" && (
           <button
             className={`${styles.navItem} ${activeSection === "news" ? styles.navItemActive : ""}`}
             onClick={() => setActiveSection("news")}
@@ -478,6 +794,7 @@ export default function DashboardPage() {
             </svg>
             Post News
           </button>
+          )}
           <button
             className={`${styles.navItem} ${activeSection === "manage-news" ? styles.navItemActive : ""}`}
             onClick={() => setActiveSection("manage-news")}
@@ -488,6 +805,7 @@ export default function DashboardPage() {
             </svg>
             Manage News
           </button>
+          {user?.role === "admin" && (
           <button
             className={`${styles.navItem} ${activeSection === "events" ? styles.navItemActive : ""}`}
             onClick={() => setActiveSection("events")}
@@ -497,6 +815,27 @@ export default function DashboardPage() {
             </svg>
             Create Event
           </button>
+          )}
+          <button
+            className={`${styles.navItem} ${activeSection === "publications" ? styles.navItemActive : ""}`}
+            onClick={() => setActiveSection("publications")}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            Publications
+          </button>
+          {user?.role === "admin" && (
+            <button
+              className={`${styles.navItem} ${activeSection === "users" ? styles.navItemActive : ""}`}
+              onClick={() => setActiveSection("users")}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Users
+            </button>
+          )}
         </nav>
 
         <div className={styles.sidebarFooter}>
@@ -569,6 +908,7 @@ export default function DashboardPage() {
             <div className={styles.quickActions}>
               <h2 className={styles.sectionTitle}>Quick Actions</h2>
               <div className={styles.actionCards}>
+                {user?.role === "admin" && (
                 <button className={styles.actionCard} onClick={() => setActiveSection("upload")}>
                   <div className={styles.actionIcon} style={{ background: "linear-gradient(135deg, var(--nsib-navy), var(--nsib-navy-light))" }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -578,6 +918,7 @@ export default function DashboardPage() {
                   <h3>Upload New Report</h3>
                   <p>Add a new investigation report to the public archive</p>
                 </button>
+                )}
                 <button className={styles.actionCard} onClick={() => setActiveSection("reports")}>
                   <div className={styles.actionIcon} style={{ background: "linear-gradient(135deg, #0077B6, #0096D6)" }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -622,12 +963,139 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Analytics */}
+        {activeSection === "analytics" && (
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h1 className={styles.pageTitle}>Site Analytics</h1>
+              <p className={styles.pageDesc}>Public engagement across the NSIB website — last 30 days.</p>
+            </div>
+
+            {analyticsLoading || !analytics ? (
+              <div className={styles.loadingInner}>
+                <div className={styles.loadingSpinner}></div>
+                <p>Loading analytics…</p>
+              </div>
+            ) : (
+              <>
+                <div className={styles.statsGrid}>
+                  <div className={styles.statCard}>
+                    <div className={styles.statIcon} style={{ background: "rgba(27,42,107,0.1)", color: "var(--nsib-navy)" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                    </div>
+                    <div>
+                      <div className={styles.statNum}>{analytics.totals.views.toLocaleString()}</div>
+                      <div className={styles.statLabel}>Total Page Views</div>
+                    </div>
+                  </div>
+                  <div className={styles.statCard}>
+                    <div className={styles.statIcon} style={{ background: "rgba(0,119,182,0.1)", color: "#0077B6" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                    </div>
+                    <div>
+                      <div className={styles.statNum}>{analytics.totals.unique_visitors.toLocaleString()}</div>
+                      <div className={styles.statLabel}>Unique Visitors</div>
+                    </div>
+                  </div>
+                  <div className={styles.statCard}>
+                    <div className={styles.statIcon} style={{ background: "rgba(45,106,79,0.1)", color: "#2d6a4f" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /><path d="M18 14h-8" /><path d="M15 18h-5" /><path d="M10 6h8v4h-8V6Z" /></svg>
+                    </div>
+                    <div>
+                      <div className={styles.statNum}>{analytics.totals.news_views.toLocaleString()}</div>
+                      <div className={styles.statLabel}>News Article Views</div>
+                    </div>
+                  </div>
+                  <div className={styles.statCard}>
+                    <div className={styles.statIcon} style={{ background: "rgba(226,48,48,0.1)", color: "var(--nsib-red)" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                    </div>
+                    <div>
+                      <div className={styles.statNum}>{analytics.totals.downloads.toLocaleString()}</div>
+                      <div className={styles.statLabel}>Report Downloads</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Views over time */}
+                <div className={styles.chartCard}>
+                  <h2 className={styles.sectionTitle}>Views Over Time</h2>
+                  {(() => {
+                    const max = Math.max(1, ...analytics.byDay.map((d) => d.count));
+                    return (
+                      <div className={styles.chartBars}>
+                        {analytics.byDay.map((d) => (
+                          <div
+                            key={d.day}
+                            className={styles.bar}
+                            title={`${new Date(d.day).toLocaleDateString("en-NG", { month: "short", day: "numeric" })}: ${d.count} views`}
+                          >
+                            <div className={styles.barFill} style={{ height: `${(d.count / max) * 100}%` }} />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                  <div className={styles.chartAxis}>
+                    <span>{analytics.byDay[0] && new Date(analytics.byDay[0].day).toLocaleDateString("en-NG", { month: "short", day: "numeric" })}</span>
+                    <span>Today</span>
+                  </div>
+                </div>
+
+                {/* Top pages + top news */}
+                <div className={styles.analyticsCols}>
+                  <div className={styles.listCard}>
+                    <h2 className={styles.sectionTitle}>Top Pages</h2>
+                    {analytics.topPages.length === 0 ? (
+                      <p className={styles.emptyNote}>No page views recorded yet.</p>
+                    ) : (
+                      <RankBars items={analytics.topPages.map((p) => ({ label: p.path, count: p.count }))} />
+                    )}
+                  </div>
+                  <div className={styles.listCard}>
+                    <h2 className={styles.sectionTitle}>Top News Articles</h2>
+                    {analytics.topNews.length === 0 ? (
+                      <p className={styles.emptyNote}>No news views recorded yet.</p>
+                    ) : (
+                      <RankBars items={analytics.topNews.map((n) => ({ label: n.title, count: n.count }))} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Reports */}
+                <div className={styles.analyticsCols}>
+                  <div className={styles.listCard}>
+                    <h2 className={styles.sectionTitle}>Most Downloaded Reports</h2>
+                    {analytics.topReports.length === 0 ? (
+                      <p className={styles.emptyNote}>Report download tracking activates once reports are wired to the live archive.</p>
+                    ) : (
+                      <RankBars items={analytics.topReports.map((r) => ({ label: r.title, count: r.count, tag: r.sector }))} />
+                    )}
+                  </div>
+                  <div className={styles.listCard}>
+                    <h2 className={styles.sectionTitle}>Downloads by Sector</h2>
+                    {analytics.sectorDownloads.length === 0 ? (
+                      <p className={styles.emptyNote}>No downloads recorded yet.</p>
+                    ) : (
+                      <RankBars items={analytics.sectorDownloads.map((s) => ({ label: s.sector, count: s.count }))} />
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Upload Section */}
         {activeSection === "upload" && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <h1 className={styles.pageTitle}>Upload Report</h1>
-              <p className={styles.pageDesc}>Upload a new investigation report to the NSIB public archive.</p>
+              <p className={styles.pageDesc}>
+                {user?.role === "admin"
+                  ? "Upload a new investigation report — it will be published immediately."
+                  : "Submit an investigation report for admin review. It will appear on the website once approved."}
+              </p>
             </div>
 
             {uploadError && (
@@ -714,53 +1182,64 @@ export default function DashboardPage() {
 
                 <div className={styles.formRight}>
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel} htmlFor="report-title">Report Title *</label>
+                    <label className={styles.formLabel}>Report No.</label>
                     <input
-                      id="report-title"
-                      type="text"
                       className={styles.formInput}
-                      placeholder="e.g. Preliminary Report on Aircraft Incident at MMIA"
-                      required
-                      value={uploadTitle}
-                      onChange={e => setUploadTitle(e.target.value)}
+                      value="Auto-generated on publish"
+                      disabled
+                      style={{ color: "#94a3b8", fontStyle: "italic" }}
                     />
                   </div>
 
+                  {uploadSector === "railway" && (
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel} htmlFor="r-trainname">Train Name</label>
+                      <input id="r-trainname" type="text" className={styles.formInput}
+                        placeholder="e.g. Lagos–Ibadan Express"
+                        value={uploadTrainName} onChange={e => setUploadTrainName(e.target.value)} />
+                    </div>
+                  )}
+
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel} htmlFor="report-type">Report Type</label>
-                    <select
-                      id="report-type"
-                      className={styles.formSelect}
-                      value={uploadType}
-                      onChange={e => setUploadType(e.target.value as ReportType)}
-                    >
-                      {REPORT_TYPES.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
+                    <label className={styles.formLabel} htmlFor="r-operator">{FIELD_LABELS[uploadSector].operator}</label>
+                    <input id="r-operator" type="text" className={styles.formInput}
+                      placeholder="e.g. Allied Air Limited"
+                      value={uploadOperator} onChange={e => setUploadOperator(e.target.value)} />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="r-reg">{FIELD_LABELS[uploadSector].reg}</label>
+                    <input id="r-reg" type="text" className={styles.formInput}
+                      placeholder={uploadSector === "maritime" ? "e.g. IMO 9074729" : "e.g. 5N-ABC"}
+                      value={uploadRegNo} onChange={e => setUploadRegNo(e.target.value)} />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="r-vtype">{FIELD_LABELS[uploadSector].vtype}</label>
+                    <input id="r-vtype" type="text" className={styles.formInput}
+                      placeholder="e.g. Boeing 737-400"
+                      value={uploadVehicleType} onChange={e => setUploadVehicleType(e.target.value)} />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="r-occurrence">Occurrence *</label>
+                    <input id="r-occurrence" type="text" className={styles.formInput}
+                      placeholder="e.g. Runway Excursion"
+                      required value={uploadOccurrence} onChange={e => setUploadOccurrence(e.target.value)} />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="r-date">Date of Release</label>
+                    <input id="r-date" type="date" className={styles.formInput}
+                      value={uploadDate} onChange={e => setUploadDate(e.target.value)} />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="r-status">Status</label>
+                    <select id="r-status" className={styles.formSelect}
+                      value={uploadStatus} onChange={e => setUploadStatus(e.target.value)}>
+                      {REPORT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel} htmlFor="report-date">Publication Date</label>
-                    <input
-                      id="report-date"
-                      type="date"
-                      className={styles.formInput}
-                      value={uploadDate}
-                      onChange={e => setUploadDate(e.target.value)}
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel} htmlFor="report-desc">Description</label>
-                    <textarea
-                      id="report-desc"
-                      className={styles.formTextarea}
-                      placeholder="Brief summary of the report contents…"
-                      rows={4}
-                      value={uploadDesc}
-                      onChange={e => setUploadDesc(e.target.value)}
-                    />
                   </div>
 
                   {uploading && uploadProgress > 0 && (
@@ -794,7 +1273,9 @@ export default function DashboardPage() {
         {activeSection === "reports" && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h1 className={styles.pageTitle}>Manage Reports</h1>
+              <h1 className={styles.pageTitle}>
+                {user?.role === "admin" ? "Manage Reports" : "My Submissions"}
+              </h1>
               <button className={styles.uploadTrigger} onClick={() => setActiveSection("upload")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -808,54 +1289,181 @@ export default function DashboardPage() {
                 <div className={styles.loadingSpinner}></div>
                 <p>Loading reports…</p>
               </div>
-            ) : reports.length === 0 ? (
-              <div className={styles.emptyState}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
-                </svg>
-                <h3>No reports yet</h3>
-                <p>Upload your first report to get started.</p>
-                <button className={styles.submitBtn} onClick={() => setActiveSection("upload")}>Upload a Report</button>
-              </div>
+            ) : user?.role === "admin" ? (
+              /* ── Admin view: Pending tab + All tab ── */
+              (() => {
+                const drafts = reports.filter(r => r.status === "draft");
+                const published = reports.filter(r => r.status === "published");
+                return (
+                  <>
+                    {/* Pending drafts callout */}
+                    {drafts.length > 0 && (
+                      <div style={{
+                        background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)",
+                        borderRadius: "var(--radius-md)", padding: "0.9rem 1.1rem",
+                        marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.6rem",
+                        fontSize: "0.88rem", color: "#92400e", fontWeight: 600,
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {drafts.length} report{drafts.length !== 1 ? "s" : ""} pending your approval
+                      </div>
+                    )}
+
+                    {/* Pending Approval table */}
+                    {drafts.length > 0 && (
+                      <>
+                        <h2 className={styles.sectionTitle} style={{ marginBottom: "0.75rem" }}>Pending Approval</h2>
+                        <div className={styles.reportsTable} style={{ marginBottom: "2rem" }}>
+                          <div className={styles.tableHeader}>
+                            <span>Report No · Occurrence</span>
+                            <span>Sector</span>
+                            <span>Submitted by</span>
+                            <span>Date</span>
+                            <span>Actions</span>
+                          </div>
+                          {drafts.map(r => (
+                            <div key={r.id} className={styles.tableRow}>
+                              <div className={styles.reportTitle}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                <span title={`${r.report_no} · ${r.occurrence || r.title}`}>
+                                  <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{r.report_no}</strong>
+                                  {" · "}{r.occurrence || r.title}
+                                </span>
+                              </div>
+                              <div className={`${styles.sectorBadge} ${styles[`sector_${r.sector}`]}`}>{r.sector}</div>
+                              <div className={styles.dateCell} style={{ fontSize: "0.82rem" }}>{r.uploader_name || "—"}</div>
+                              <div className={styles.dateCell}>{formatDate(r.created_at)}</div>
+                              <div className={styles.actionCell}>
+                                <a href={r.file_url} target="_blank" rel="noopener noreferrer" className={styles.viewBtn}>View</a>
+                                <button
+                                  className={styles.viewBtn}
+                                  style={{ background: "rgba(16,185,129,0.1)", color: "#065f46", borderColor: "rgba(16,185,129,0.3)" }}
+                                  onClick={() => approveReport(r.id)}
+                                >
+                                  Approve
+                                </button>
+                                <button className={styles.deleteBtn} onClick={() => handleDelete(r.id)}>Delete</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* All published reports */}
+                    <h2 className={styles.sectionTitle} style={{ marginBottom: "0.75rem" }}>Published Reports</h2>
+                    {published.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        <h3>No published reports yet</h3>
+                        <p>Upload a report or approve a pending submission.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={styles.reportsTable}>
+                          <div className={styles.tableHeader}>
+                            <span>Report No · Occurrence</span>
+                            <span>Sector</span>
+                            <span>Status</span>
+                            <span>Date</span>
+                            <span>Actions</span>
+                          </div>
+                          {pagedReports.filter(r => r.status === "published").map(r => (
+                            <div key={r.id} className={styles.tableRow}>
+                              <div className={styles.reportTitle}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                <span title={`${r.report_no} · ${r.occurrence || r.title}`}>
+                                  <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{r.report_no}</strong>
+                                  {" · "}{r.occurrence || r.title}
+                                </span>
+                              </div>
+                              <div className={`${styles.sectorBadge} ${styles[`sector_${r.sector}`]}`}>{r.sector}</div>
+                              <div className={styles.typeBadge}>{r.report_status || r.type?.replace("_", " ")}</div>
+                              <div className={styles.dateCell}>{formatDate(r.published_at || r.created_at)}</div>
+                              <div className={styles.actionCell}>
+                                <a href={r.file_url} target="_blank" rel="noopener noreferrer" className={styles.viewBtn}>View</a>
+                                <button className={styles.deleteBtn} onClick={() => handleDelete(r.id)}>Delete</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <Pager page={reportsPageC} totalPages={reportsTotalPages} onChange={setReportsPage} />
+                      </>
+                    )}
+                  </>
+                );
+              })()
             ) : (
-              <div className={styles.reportsTable}>
-                <div className={styles.tableHeader}>
-                  <span>Title</span>
-                  <span>Sector</span>
-                  <span>Type</span>
-                  <span>Date</span>
-                  <span>File</span>
-                  <span>Actions</span>
+              /* ── Staff view: own submissions with status ── */
+              reports.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <h3>No submissions yet</h3>
+                  <p>Upload a report to submit it for admin review.</p>
+                  <button className={styles.submitBtn} onClick={() => setActiveSection("upload")}>Upload a Report</button>
                 </div>
-                {reports.map(r => (
-                  <div key={r.id} className={styles.tableRow}>
-                    <div className={styles.reportTitle}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                      <span title={r.title}>{r.title.length > 55 ? r.title.slice(0, 55) + "…" : r.title}</span>
+              ) : (
+                <>
+                  <div className={styles.reportsTable}>
+                    <div className={styles.tableHeader}>
+                      <span>Report No · Occurrence</span>
+                      <span>Sector</span>
+                      <span>Approval Status</span>
+                      <span>Submitted</span>
+                      <span>File</span>
                     </div>
-                    <div className={`${styles.sectorBadge} ${styles[`sector_${r.sector}`]}`}>{r.sector}</div>
-                    <div className={styles.typeBadge}>{r.type?.replace("_", " ")}</div>
-                    <div className={styles.dateCell}>{formatDate(r.published_at || r.created_at)}</div>
-                    <div className={styles.fileCell}>
-                      {r.file_name ? r.file_name.slice(0, 20) + (r.file_name.length > 20 ? "…" : "") : "—"}
-                      {r.file_size ? <span> ({formatBytes(r.file_size)})</span> : null}
-                    </div>
-                    <div className={styles.actionCell}>
-                      <a href={r.file_url} target="_blank" rel="noopener noreferrer" className={styles.viewBtn}>
-                        View
-                      </a>
-                      <button className={styles.deleteBtn} onClick={() => handleDelete(r.id)}>
-                        Delete
-                      </button>
-                    </div>
+                    {pagedReports.map(r => (
+                      <div key={r.id} className={styles.tableRow}>
+                        <div className={styles.reportTitle}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                          <span title={`${r.report_no} · ${r.occurrence || r.title}`}>
+                            <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{r.report_no}</strong>
+                            {" · "}{r.occurrence || r.title}
+                          </span>
+                        </div>
+                        <div className={`${styles.sectorBadge} ${styles[`sector_${r.sector}`]}`}>{r.sector}</div>
+                        <div>
+                          {r.status === "draft" ? (
+                            <span style={{
+                              display: "inline-flex", alignItems: "center", gap: "0.35rem",
+                              fontSize: "0.78rem", fontWeight: 700, padding: "0.25rem 0.6rem",
+                              borderRadius: "20px", background: "rgba(245,158,11,0.1)",
+                              color: "#92400e", border: "1px solid rgba(245,158,11,0.3)",
+                            }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                              Pending Review
+                            </span>
+                          ) : (
+                            <span style={{
+                              display: "inline-flex", alignItems: "center", gap: "0.35rem",
+                              fontSize: "0.78rem", fontWeight: 700, padding: "0.25rem 0.6rem",
+                              borderRadius: "20px", background: "rgba(16,185,129,0.1)",
+                              color: "#065f46", border: "1px solid rgba(16,185,129,0.3)",
+                            }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                              Published
+                            </span>
+                          )}
+                        </div>
+                        <div className={styles.dateCell}>{formatDate(r.created_at)}</div>
+                        <div className={styles.fileCell}>
+                          <a href={r.file_url} target="_blank" rel="noopener noreferrer" className={styles.viewBtn}>View</a>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                  <Pager page={reportsPageC} totalPages={reportsTotalPages} onChange={setReportsPage} />
+                </>
+              )
             )}
           </div>
         )}
         {/* Post News Section */}
-        {activeSection === "news" && (
+        {activeSection === "news" && user?.role === "admin" && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <h1 className={styles.pageTitle}>Post News Article</h1>
@@ -969,10 +1577,12 @@ export default function DashboardPage() {
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <h1 className={styles.pageTitle}>Manage News</h1>
+              {user?.role === "admin" && (
               <button className={styles.uploadTrigger} onClick={() => setActiveSection("news")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                 Post New
               </button>
+              )}
             </div>
 
             {newsLoading ? (
@@ -983,10 +1593,11 @@ export default function DashboardPage() {
                   <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
                 </svg>
                 <h3>No news articles yet</h3>
-                <p>Post your first article to get started.</p>
-                <button className={styles.submitBtn} onClick={() => setActiveSection("news")}>Post News</button>
+                <p>{user?.role === "admin" ? "Post your first article to get started." : "No news articles have been published yet."}</p>
+                {user?.role === "admin" && <button className={styles.submitBtn} onClick={() => setActiveSection("news")}>Post News</button>}
               </div>
             ) : (
+              <>
               <div className={styles.reportsTable}>
                 <div className={styles.tableHeader}>
                   <span>Headline</span>
@@ -995,7 +1606,7 @@ export default function DashboardPage() {
                   <span>Author</span>
                   <span>Actions</span>
                 </div>
-                {news.map(n => (
+                {pagedNewsRows.map(n => (
                   <div key={n.id} className={styles.tableRow}>
                     <div className={styles.reportTitle}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /></svg>
@@ -1005,16 +1616,18 @@ export default function DashboardPage() {
                     <div className={styles.dateCell}>{formatDate(n.published_at)}</div>
                     <div className={styles.dateCell}>{n.author_name}</div>
                     <div className={styles.actionCell}>
-                      <button className={styles.deleteBtn} onClick={() => handleDeleteNews(n.id)}>Delete</button>
+                      {user?.role === "admin" && <button className={styles.deleteBtn} onClick={() => handleDeleteNews(n.id)}>Delete</button>}
                     </div>
                   </div>
                 ))}
               </div>
+              <Pager page={newsPageC} totalPages={newsTotalPages} onChange={setNewsPage} />
+              </>
             )}
           </div>
         )}
         {/* Events Section */}
-        {activeSection === "events" && (
+        {activeSection === "events" && user?.role === "admin" && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <h1 className={styles.pageTitle}>Create Event</h1>
@@ -1161,6 +1774,267 @@ export default function DashboardPage() {
                 {eventSubmitting ? (eventFlyerUploading ? "Uploading flyer…" : "Publishing…") : "Publish Event"}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Publications Section */}
+        {activeSection === "publications" && (
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h1 className={styles.pageTitle}>Publications</h1>
+              <p className={styles.pageDesc}>Post legislations, MoUs, forms, manuals, and FOI documents to the website.</p>
+            </div>
+
+            {pubError && (
+              <div className={styles.alertError}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                {pubError}
+              </div>
+            )}
+            {pubSuccess && (
+              <div className={styles.alertSuccess}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                {pubSuccess}
+              </div>
+            )}
+
+            {user?.role === "admin" && (
+            <form className={styles.uploadForm} onSubmit={handlePubSubmit}>
+              <div className={styles.formGrid}>
+                <div className={styles.formLeft}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Category *</label>
+                    <div className={styles.sectorGrid}>
+                      {PUB_CATEGORIES.map(c => (
+                        <label key={c.value} className={`${styles.sectorOption} ${pubCategory === c.value ? styles.sectorOptionActive : ""}`}>
+                          <input type="radio" name="pub-cat" value={c.value} checked={pubCategory === c.value} onChange={() => setPubCategory(c.value)} className={styles.sectorInput} />
+                          <span>{c.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.dropZone} style={{ minHeight: "120px" }} onClick={() => pubFileInputRef.current?.click()}>
+                    <input ref={pubFileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" className={styles.fileInput} onChange={e => setPubFile(e.target.files?.[0] || null)} />
+                    {pubFile ? (
+                      <div className={styles.fileSelected}>
+                        <div className={styles.fileIcon}>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                        </div>
+                        <span className={styles.fileName}>{pubFile.name}</span>
+                        <span className={styles.fileSize}>{formatBytes(pubFile.size)}</span>
+                        <button type="button" className={styles.fileRemove} onClick={e => { e.stopPropagation(); setPubFile(null); if (pubFileInputRef.current) pubFileInputRef.current.value = ""; }}>Change file</button>
+                      </div>
+                    ) : (
+                      <div className={styles.dropZoneContent}>
+                        <div className={styles.dropIcon}>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                        </div>
+                        <p className={styles.dropTitle}>Upload document</p>
+                        <p className={styles.dropSub}>Click to browse</p>
+                        <p className={styles.dropFormats}>PDF, Word, Excel · Max 50MB</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.formRight}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="pub-title">Title *</label>
+                    <input id="pub-title" type="text" className={styles.formInput} placeholder="e.g. NSIB Establishment Act 2022" required value={pubTitle} onChange={e => setPubTitle(e.target.value)} />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="pub-ref">Reference No. <span style={{ fontWeight: 400, color: "#999" }}>(optional)</span></label>
+                    <input id="pub-ref" type="text" className={styles.formInput} placeholder="e.g. LEG/001/2026" value={pubRef} onChange={e => setPubRef(e.target.value)} />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="pub-status">Status <span style={{ fontWeight: 400, color: "#999" }}>(optional)</span></label>
+                    <input id="pub-status" type="text" className={styles.formInput} placeholder="e.g. In Force / Active / Published" value={pubStatus} onChange={e => setPubStatus(e.target.value)} />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="pub-date">Date</label>
+                    <input id="pub-date" type="date" className={styles.formInput} value={pubDate} onChange={e => setPubDate(e.target.value)} />
+                  </div>
+                  <button type="submit" className={styles.submitBtn} disabled={pubSubmitting}>
+                    {pubSubmitting ? (<><span className={styles.btnSpinner}></span> Publishing…</>) : (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                        Post Publication
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
+            )}
+
+            <div style={{ marginTop: "2rem" }}>
+              <h2 className={styles.sectionTitle}>Posted Publications</h2>
+              {pubsLoading ? (
+                <div className={styles.loadingInner}><div className={styles.loadingSpinner}></div><p>Loading…</p></div>
+              ) : pubs.length === 0 ? (
+                <p style={{ color: "#94a3b8", padding: "1rem 0" }}>No publications posted yet.</p>
+              ) : (
+                <>
+                <div className={styles.reportsTable}>
+                  <div className={styles.tableHeader}>
+                    <span>Title</span><span>Category</span><span>Reference</span><span>Date</span><span>Status</span><span>Actions</span>
+                  </div>
+                  {pagedPubs.map(p => (
+                    <div key={p.id} className={styles.tableRow}>
+                      <div className={styles.reportTitle}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                        <span title={p.title}>{p.title.length > 45 ? p.title.slice(0, 45) + "…" : p.title}</span>
+                      </div>
+                      <div className={styles.typeBadge}>{p.category}</div>
+                      <div className={styles.dateCell} style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{p.reference_no || "—"}</div>
+                      <div className={styles.dateCell}>{formatDate(p.published_at)}</div>
+                      <div className={styles.dateCell}>{p.status || "—"}</div>
+                      <div className={styles.actionCell}>
+                        <a href={p.file_url} target="_blank" rel="noopener noreferrer" className={styles.viewBtn}>View</a>
+                        {user?.role === "admin" && <button className={styles.deleteBtn} onClick={() => handleDeletePub(p.id)}>Delete</button>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Pager page={pubsPageC} totalPages={pubsTotalPages} onChange={setPubsPage} />
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "users" && user?.role === "admin" && (
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h1 className={styles.pageTitle}>Users</h1>
+              <p className={styles.pageDesc}>Create staff accounts and manage roles. New users must complete 2FA setup on their first sign-in.</p>
+            </div>
+
+            {/* ── Create user form ── */}
+            <div className={styles.formCard} style={{ marginBottom: "2rem" }}>
+              <h2 className={styles.formCardTitle}>Create New User</h2>
+              {newUserError && (
+                <div className={styles.alertError}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                  {newUserError}
+                </div>
+              )}
+              {newUserSuccess && (
+                <div className={styles.alertSuccess}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  {newUserSuccess}
+                </div>
+              )}
+              <form onSubmit={handleCreateUser}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 0.7fr auto", gap: "0.75rem", alignItems: "flex-end" }}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Full Name</label>
+                    <input className={styles.formInput} type="text" required placeholder="John Doe"
+                      value={newUserName} onChange={e => setNewUserName(e.target.value)} />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Email Address</label>
+                    <input className={styles.formInput} type="email" required placeholder="user@nsib.gov.ng"
+                      value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Password (min. 8 chars)</label>
+                    <input className={styles.formInput} type="password" required minLength={8} placeholder="••••••••"
+                      value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Role</label>
+                    <select className={styles.formInput} value={newUserRole} onChange={e => setNewUserRole(e.target.value)}>
+                      <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={newUserSubmitting}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "0.4rem",
+                      padding: "0 1.1rem", background: "var(--nsib-navy)", color: "#fff",
+                      border: "none", borderRadius: "var(--radius-md)", fontSize: "0.85rem",
+                      fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+                      opacity: newUserSubmitting ? 0.7 : 1, height: "40px", flexShrink: 0,
+                    }}
+                  >
+                    {newUserSubmitting ? <span className={styles.btnSpinner} /> : (
+                      <>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><line x1="12" y1="3" x2="12" y2="15"/><line x1="9" y1="6" x2="15" y2="6"/></svg>
+                        Create User
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* ── User list ── */}
+            {usersError && (
+              <div className={styles.alertError}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                {usersError}
+              </div>
+            )}
+
+            {usersLoading ? (
+              <div className={styles.loadingInner}><div className={styles.loadingSpinner}></div><p>Loading…</p></div>
+            ) : users.length === 0 ? (
+              <p style={{ color: "#94a3b8", padding: "1rem 0" }}>No users yet. Create one above.</p>
+            ) : (
+              <div className={styles.reportsTable}>
+                <div className={styles.tableHeader} style={{ gridTemplateColumns: "1.6fr 2fr 1.4fr 0.8fr 1fr 2.2rem" }}>
+                  <span>Name</span><span>Email</span><span>Role</span><span>2FA</span><span>Joined</span><span></span>
+                </div>
+                {users.map(u => (
+                  <div key={u.id} className={styles.tableRow} style={{ gridTemplateColumns: "1.6fr 2fr 1.4fr 0.8fr 1fr 2.2rem" }}>
+                    <div className={styles.reportTitle}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                      <span title={u.full_name}>{u.full_name}</span>
+                    </div>
+                    <div className={styles.dateCell} style={{ fontSize: "0.82rem" }}>{u.email}</div>
+                    <div>
+                      {u.id === user?.userId ? (
+                        <span className={styles.typeBadge}>{u.role} (you)</span>
+                      ) : (
+                        <select
+                          className={styles.formInput}
+                          style={{ padding: "0.4rem 0.6rem", fontSize: "0.85rem" }}
+                          value={u.role}
+                          onChange={e => changeRole(u.id, e.target.value)}
+                        >
+                          <option value="admin">admin</option>
+                          <option value="staff">staff</option>
+                        </select>
+                      )}
+                    </div>
+                    <div className={styles.dateCell}>{u.totp_enabled ? "On" : "Off"}</div>
+                    <div className={styles.dateCell}>{formatDate(u.created_at)}</div>
+                    <div>
+                      {u.id !== user?.userId && (
+                        <button
+                          title="Delete user"
+                          onClick={() => handleDeleteUser(u.id, u.email)}
+                          style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            color: "#94a3b8", padding: "0.25rem", borderRadius: "4px",
+                            display: "flex", alignItems: "center", transition: "color 0.15s",
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.color = "#ef4444")}
+                          onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

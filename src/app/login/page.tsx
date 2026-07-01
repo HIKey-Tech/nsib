@@ -3,66 +3,103 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./login.module.css";
+
+type Stage = "form" | "enroll" | "twofa" | "backup";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [stage, setStage] = useState<Stage>("form");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  // Login form
+  // Login credentials
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Register form
-  const [regName, setRegName] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPassword, setRegPassword] = useState("");
+  // 2FA
+  const [code, setCode] = useState("");
+  const [qr, setQr] = useState("");
+  const [secret, setSecret] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+
+  const startEnroll = async () => {
+    const res = await fetch("/api/auth/2fa/setup", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) { setError(data.error || "Could not start 2FA setup"); return false; }
+    setQr(data.qr);
+    setSecret(data.secret);
+    setStage("enroll");
+    return true;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: loginEmail, password: loginPassword }),
     });
-
     const data = await res.json();
+    if (!res.ok) { setError(data.error || "Login failed"); setLoading(false); return; }
+    if (data.needs2fa) setStage("twofa");
+    else if (data.needsEnrollment) await startEnroll();
     setLoading(false);
-
-    if (!res.ok) {
-      setError(data.error || "Login failed");
-    } else {
-      router.push("/dashboard");
-    }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    const res = await fetch("/api/auth/register", {
+    const res = await fetch("/api/auth/2fa/activate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: regEmail, password: regPassword, full_name: regName }),
+      body: JSON.stringify({ code }),
     });
-
     const data = await res.json();
     setLoading(false);
-
-    if (!res.ok) {
-      setError(data.error || "Registration failed");
-    } else {
-      setSuccess("Account created. Redirecting to dashboard…");
-      setTimeout(() => router.push("/dashboard"), 1200);
-    }
+    if (!res.ok) { setError(data.error || "Activation failed"); return; }
+    setBackupCodes(data.backupCodes || []);
+    setCode("");
+    setStage("backup");
   };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const res = await fetch("/api/auth/2fa/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error || "Verification failed"); return; }
+    router.push("/dashboard");
+  };
+
+  const codeInput = (
+    <div className={styles.field}>
+      <label className={styles.label} htmlFor="code">Authentication Code</label>
+      <input
+        id="code"
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        className={styles.input}
+        placeholder="6-digit code"
+        required
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        autoFocus
+        style={{ letterSpacing: "0.3em", fontSize: "1.1rem" }}
+      />
+    </div>
+  );
 
   return (
     <div className={styles.page}>
@@ -70,24 +107,15 @@ export default function LoginPage() {
       <div className={styles.brand}>
         <div className={styles.brandInner}>
           <Link href="/" style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "var(--nsib-slate-light)",
-            textDecoration: "none",
-            transition: "color 0.2s"
+            display: "inline-flex", alignItems: "center", gap: "0.4rem",
+            fontSize: "0.85rem", fontWeight: 700, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: "var(--nsib-slate-light)",
+            textDecoration: "none", transition: "color 0.2s",
           }}>
-            <span>←</span>
-            <span>Back to Website</span>
+            <span>←</span><span>Back to Website</span>
           </Link>
           <h1 className={styles.brandTitle}>
-            NSIB<br />
-            Staff<br />
-            <span>Portal</span>
+            NSIB<br />Staff<br /><span>Portal</span>
           </h1>
           <p className={styles.brandDesc}>
             Secure access for NSIB staff to upload and manage investigation reports across all transport sectors.
@@ -109,7 +137,7 @@ export default function LoginPage() {
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </div>
-              Secure document management
+              Protected by two-factor authentication
             </li>
             <li className={styles.featureItem}>
               <div className={styles.featureIcon}>
@@ -127,22 +155,6 @@ export default function LoginPage() {
       {/* Form Panel */}
       <div className={styles.formPanel}>
         <div className={styles.formBox}>
-          {/* Tabs */}
-          <div className={styles.tabs}>
-            <button
-              className={`${styles.tab} ${activeTab === "login" ? styles.tabActive : ""}`}
-              onClick={() => { setActiveTab("login"); setError(""); setSuccess(""); }}
-            >
-              Sign In
-            </button>
-            <button
-              className={`${styles.tab} ${activeTab === "register" ? styles.tabActive : ""}`}
-              onClick={() => { setActiveTab("register"); setError(""); setSuccess(""); }}
-            >
-              Register
-            </button>
-          </div>
-
           {error && (
             <div className={styles.errorAlert}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -151,16 +163,9 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-          {success && (
-            <div className={styles.successAlert}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              {success}
-            </div>
-          )}
 
-          {activeTab === "login" ? (
+          {/* Step 1 — credentials */}
+          {stage === "form" && (
             <>
               <div className={styles.formHeader}>
                 <h2 className={styles.formTitle}>Welcome back</h2>
@@ -169,101 +174,88 @@ export default function LoginPage() {
               <form className={styles.form} onSubmit={handleLogin}>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="email">Email Address</label>
-                  <input
-                    id="email"
-                    type="email"
-                    className={styles.input}
-                    placeholder="you@nsib.gov.ng"
-                    required
-                    value={loginEmail}
-                    onChange={e => setLoginEmail(e.target.value)}
-                    autoComplete="email"
-                  />
+                  <input id="email" type="email" className={styles.input} placeholder="you@nsib.gov.ng"
+                    required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} autoComplete="email" />
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="password">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    className={styles.input}
-                    placeholder="••••••••"
-                    required
-                    value={loginPassword}
-                    onChange={e => setLoginPassword(e.target.value)}
-                    autoComplete="current-password"
-                  />
+                  <input id="password" type="password" className={styles.input} placeholder="••••••••"
+                    required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} autoComplete="current-password" />
                 </div>
                 <button type="submit" className={styles.submitBtn} disabled={loading}>
-                  {loading ? (
-                    <span className={styles.spinner}></span>
-                  ) : (
-                    <>
-                      <span>Sign in to Portal</span>
-                      <svg className={styles.submitArrow} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                      </svg>
-                    </>
-                  )}
+                  {loading ? <span className={styles.spinner} /> : <span>Sign in to Portal</span>}
                 </button>
               </form>
             </>
-          ) : (
+          )}
+
+          {/* Step 2a — enrollment */}
+          {stage === "enroll" && (
             <>
               <div className={styles.formHeader}>
-                <h2 className={styles.formTitle}>Create account</h2>
-                <p className={styles.formSubtitle}>Register as an NSIB staff member.</p>
+                <h2 className={styles.formTitle}>Set up two-factor</h2>
+                <p className={styles.formSubtitle}>
+                  Scan this QR code with Google Authenticator or Authy, then enter the 6-digit code to confirm.
+                </p>
               </div>
-              <form className={styles.form} onSubmit={handleRegister}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="reg-name">Full Name</label>
-                  <input
-                    id="reg-name"
-                    type="text"
-                    className={styles.input}
-                    placeholder="John Doe"
-                    required
-                    value={regName}
-                    onChange={e => setRegName(e.target.value)}
-                  />
+              {qr && (
+                <div style={{ display: "flex", justifyContent: "center", margin: "0.5rem 0 1rem" }}>
+                  <Image src={qr} alt="2FA QR code" width={200} height={200}
+                    style={{ borderRadius: 12, border: "1px solid var(--nsib-gray-200)" }} unoptimized />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="reg-email">Email Address</label>
-                  <input
-                    id="reg-email"
-                    type="email"
-                    className={styles.input}
-                    placeholder="you@nsib.gov.ng"
-                    required
-                    value={regEmail}
-                    onChange={e => setRegEmail(e.target.value)}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="reg-password">Password</label>
-                  <input
-                    id="reg-password"
-                    type="password"
-                    className={styles.input}
-                    placeholder="Min. 8 characters"
-                    required
-                    minLength={8}
-                    value={regPassword}
-                    onChange={e => setRegPassword(e.target.value)}
-                  />
-                </div>
+              )}
+              <p style={{ fontSize: "0.78rem", color: "var(--nsib-slate-light)", textAlign: "center", marginBottom: "1rem", wordBreak: "break-all" }}>
+                Can't scan? Enter this key manually:<br /><strong style={{ color: "var(--nsib-navy)" }}>{secret}</strong>
+              </p>
+              <form className={styles.form} onSubmit={handleActivate}>
+                {codeInput}
                 <button type="submit" className={styles.submitBtn} disabled={loading}>
-                  {loading ? (
-                    <span className={styles.spinner}></span>
-                  ) : (
-                    <>
-                      <span>Create Account</span>
-                      <svg className={styles.submitArrow} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                      </svg>
-                    </>
-                  )}
+                  {loading ? <span className={styles.spinner} /> : <span>Confirm &amp; Enable</span>}
                 </button>
               </form>
+            </>
+          )}
+
+          {/* Step 2b — verify at login */}
+          {stage === "twofa" && (
+            <>
+              <div className={styles.formHeader}>
+                <h2 className={styles.formTitle}>Two-factor verification</h2>
+                <p className={styles.formSubtitle}>Enter the 6-digit code from your authenticator app, or a backup code.</p>
+              </div>
+              <form className={styles.form} onSubmit={handleVerify}>
+                {codeInput}
+                <button type="submit" className={styles.submitBtn} disabled={loading}>
+                  {loading ? <span className={styles.spinner} /> : <span>Verify &amp; Continue</span>}
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* Step 3 — backup codes (shown once) */}
+          {stage === "backup" && (
+            <>
+              <div className={styles.formHeader}>
+                <h2 className={styles.formTitle}>Save your backup codes</h2>
+                <p className={styles.formSubtitle}>
+                  Store these somewhere safe. Each one lets you sign in once if you lose your device. They won't be shown again.
+                </p>
+              </div>
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem",
+                margin: "0.5rem 0 1.25rem", fontFamily: "monospace",
+              }}>
+                {backupCodes.map((c) => (
+                  <div key={c} style={{
+                    padding: "0.6rem", textAlign: "center", background: "var(--nsib-gray-100)",
+                    border: "1px solid var(--nsib-gray-200)", borderRadius: 8,
+                    fontSize: "0.95rem", letterSpacing: "0.05em", color: "var(--nsib-navy)",
+                  }}>{c}</div>
+                ))}
+              </div>
+              <button className={styles.submitBtn} onClick={() => router.push("/dashboard")}>
+                <span>I've saved them — Continue</span>
+              </button>
             </>
           )}
 

@@ -1,16 +1,10 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 
-// ─── Shared Components ──────────────────────────────────────────────────────
-
-const DownloadIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-  </svg>
-);
+// ─── Shared ─────────────────────────────────────────────────────────────────
 
 const SearchIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -18,52 +12,20 @@ const SearchIcon = () => (
   </svg>
 );
 
-const ChevronIcon = ({ dir }: { dir: "left" | "right" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    {dir === "left" ? <polyline points="15 18 9 12 15 6"/> : <polyline points="9 18 15 12 9 6"/>}
-  </svg>
-);
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const map: Record<string, { bg: string; text: string }> = {
-    "Published":   { bg: "#1B2A6B", text: "#fff" },
-    "Draft":       { bg: "#D97706", text: "#fff" },
-    "Archived":    { bg: "#64748B", text: "#fff" },
-  };
-  const c = map[status] ?? { bg: "#64748B", text: "#fff" };
-  return (
-    <span style={{
-      display: "inline-block", padding: "0.2rem 0.65rem", borderRadius: "10px",
-      fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase",
-      letterSpacing: "0.05em", backgroundColor: c.bg, color: c.text, whiteSpace: "nowrap",
-    }}>{status}</span>
-  );
+const CATEGORY_COLORS: Record<string, string> = {
+  general: "#2d6a4f", safety: "#E23030", aviation: "#1B2A6B", maritime: "#0077B6",
+  railway: "#6A0572", press_release: "#e63946", announcement: "#D97706",
 };
 
-const CategoryBadge = ({ category }: { category: string }) => {
-  const map: Record<string, string> = {
-    "Aviation": "#1B2A6B", "Maritime": "#0077B6", "Railway": "#6A0572",
-    "General": "#2d6a4f", "Press Release": "#e63946", "Safety Alert": "#E23030", "Announcement": "#D97706",
-  };
-  return (
-    <span style={{
-      display: "inline-block", padding: "0.2rem 0.55rem", borderRadius: "10px",
-      fontSize: "0.66rem", fontWeight: 700, textTransform: "uppercase",
-      letterSpacing: "0.05em", backgroundColor: map[category] ?? "#64748B", color: "#fff", whiteSpace: "nowrap",
-    }}>{category}</span>
-  );
-};
+const categoryLabel = (cat: string) =>
+  cat.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-const DownloadBtn = () => (
-  <button onClick={(e) => { e.stopPropagation(); }} style={{
-    display: "inline-flex", alignItems: "center", gap: "0.35rem",
-    padding: "0.35rem 0.8rem", backgroundColor: "#E23030", color: "white",
-    border: "none", borderRadius: "6px", fontSize: "0.72rem", fontWeight: 700,
-    cursor: "pointer", transition: "all 0.18s ease", whiteSpace: "nowrap",
-  }}
-  onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#B92424"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-  onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#E23030"; e.currentTarget.style.transform = "none"; }}
-  ><DownloadIcon />PDF</button>
+const CategoryBadge = ({ category }: { category: string }) => (
+  <span style={{
+    display: "inline-block", padding: "0.25rem 0.7rem", borderRadius: "20px",
+    fontSize: "0.66rem", fontWeight: 700, textTransform: "uppercase",
+    letterSpacing: "0.05em", backgroundColor: CATEGORY_COLORS[category] ?? "#64748B", color: "#fff", whiteSpace: "nowrap",
+  }}>{categoryLabel(category)}</span>
 );
 
 const TabNav = ({ active }: { active: string }) => {
@@ -99,68 +61,56 @@ const TabNav = ({ active }: { active: string }) => {
   );
 };
 
-const TH = ({ children, width }: { children: React.ReactNode; width?: string }) => (
-  <th style={{
-    padding: "0.85rem 1rem", fontSize: "0.72rem", fontWeight: 700,
-    textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.95)",
-    borderBottom: "2px solid rgba(255,255,255,0.15)", textAlign: "left",
-    whiteSpace: "nowrap", width: width || "auto",
-  }}>{children}</th>
-);
-
-const TD = ({ children, muted }: { children: React.ReactNode; muted?: boolean }) => (
-  <td style={{
-    padding: "0.9rem 1rem", fontSize: "0.855rem",
-    color: muted ? "#6A6B70" : "#1E293B",
-    borderBottom: "1px solid #F1F5F9", verticalAlign: "middle",
-  }}>{children}</td>
-);
-
 // ─── Data ───────────────────────────────────────────────────────────────────
 
-/* 
-  NOTE: Supabase fetch has been commented out.
-  Previously this page fetched from /api/news?limit=50.
-  Using 20 dummy records for now.
-*/
-
-type NewsRecord = {
-  sn: number;
-  datePublished: string;
+interface NewsItem {
+  id: string;
   title: string;
+  excerpt: string;
   category: string;
-  author: string;
-  status: string;
-};
-
-const newsRecords: NewsRecord[] = [
-  { sn: 1,  datePublished: "2026-03-28", title: "NSIB Signs MoU with the Nigerian Navy for Maritime Safety",                    category: "Maritime",      author: "NSIB Communications", status: "Published" },
-  { sn: 2,  datePublished: "2026-03-15", title: "Director General Keynote at Annual Transport Safety Summit",                   category: "Announcement",  author: "NSIB Communications", status: "Published" },
-  { sn: 3,  datePublished: "2026-03-02", title: "New Safety Recommendations Issued for Domestic Airlines",                      category: "Aviation",      author: "NSIB Communications", status: "Published" },
-  { sn: 4,  datePublished: "2026-02-18", title: "NSIB Completes Preliminary Investigation into Lagos-Ibadan Rail Incident",     category: "Railway",       author: "NSIB Communications", status: "Published" },
-  { sn: 5,  datePublished: "2026-02-05", title: "NSIB Hosts International Safety Investigators Workshop",                      category: "General",       author: "NSIB Communications", status: "Published" },
-  { sn: 6,  datePublished: "2026-01-20", title: "Press Release: Annual Safety Statistics Report 2025",                          category: "Press Release", author: "NSIB Communications", status: "Published" },
-  { sn: 7,  datePublished: "2025-12-12", title: "Safety Alert: Increased Bird Strike Activities at Major Airports",             category: "Safety Alert",  author: "NSIB Aviation Dept",  status: "Published" },
-  { sn: 8,  datePublished: "2025-11-28", title: "NSIB Launches New Online Occurrence Reporting Portal",                         category: "Announcement",  author: "NSIB IT Unit",        status: "Published" },
-  { sn: 9,  datePublished: "2025-11-10", title: "Maritime Advisory: Updated Navigational Protocols for Lagos Port Complex",     category: "Maritime",      author: "NSIB Maritime Dept",  status: "Published" },
-  { sn: 10, datePublished: "2025-10-25", title: "NSIB Partners with ICAO for Regional Capacity Building Programme",            category: "Aviation",      author: "NSIB Communications", status: "Published" },
-  { sn: 11, datePublished: "2025-10-08", title: "Rail Safety: Recommendations for Level Crossing Improvements",                category: "Railway",       author: "NSIB Rail Dept",      status: "Published" },
-  { sn: 12, datePublished: "2025-09-22", title: "NSIB Investigator Training Programme Graduates 45 New Investigators",         category: "General",       author: "NSIB Communications", status: "Published" },
-  { sn: 13, datePublished: "2025-09-05", title: "Press Release: NSIB Response to Dana Air Engine Failure Incident",            category: "Press Release", author: "NSIB Communications", status: "Published" },
-  { sn: 14, datePublished: "2025-08-18", title: "Safety Alert: Fuel Contamination Warning for Aviation Operators",             category: "Safety Alert",  author: "NSIB Aviation Dept",  status: "Published" },
-  { sn: 15, datePublished: "2025-07-30", title: "NSIB Delegation Attends IMO Sub-Committee on Casualty Investigation",        category: "Maritime",      author: "NSIB Maritime Dept",  status: "Published" },
-  { sn: 16, datePublished: "2025-07-12", title: "Announcement: Public Consultation on Draft Safety Regulation Amendments",     category: "Announcement",  author: "NSIB Communications", status: "Published" },
-  { sn: 17, datePublished: "2025-06-25", title: "NSIB Releases Final Report on Abuja Metro Signal Failure Incident",           category: "Railway",       author: "NSIB Rail Dept",      status: "Published" },
-  { sn: 18, datePublished: "2025-06-08", title: "Annual Report 2024: Bureau Highlights and Strategic Outlook",                  category: "General",       author: "NSIB Communications", status: "Published" },
-  { sn: 19, datePublished: "2025-05-20", title: "Press Release: NSIB Welcomes New Board Members",                              category: "Press Release", author: "NSIB Communications", status: "Published" },
-  { sn: 20, datePublished: "2025-05-02", title: "Safety Alert: Weather-Related Risks During Harmattan Season",                 category: "Safety Alert",  author: "NSIB Aviation Dept",  status: "Published" },
-];
-
-const ITEMS_PER_PAGE = 20;
-const YEARS = ["2026", "2025", "2024"];
+  image_url: string | null;
+  published_at: string;
+  author_name: string;
+}
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
+// ─── Card ───────────────────────────────────────────────────────────────────
+
+function NewsCard({ n }: { n: NewsItem }) {
+  return (
+    <Link href={`/news/${n.id}`} style={{ textDecoration: "none", display: "block" }}>
+      <article
+        style={{
+          background: "white", borderRadius: "16px", overflow: "hidden",
+          border: "1px solid #E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          height: "100%", display: "flex", flexDirection: "column", transition: "transform 0.2s ease, box-shadow 0.2s ease",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 28px rgba(27,42,107,0.12)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)"; }}
+      >
+        <div style={{ height: "190px", position: "relative", background: "linear-gradient(135deg, #1B2A6B, #2d3f8f)" }}>
+          {n.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={n.image_url} alt={n.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.25)" }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
+            </div>
+          )}
+          <div style={{ position: "absolute", top: "0.9rem", left: "0.9rem" }}><CategoryBadge category={n.category} /></div>
+        </div>
+        <div style={{ padding: "1.4rem 1.5rem 1.6rem", display: "flex", flexDirection: "column", flex: 1 }}>
+          <span style={{ fontSize: "0.78rem", color: "#94A3B8", fontWeight: 600, marginBottom: "0.6rem" }}>{formatDate(n.published_at)}</span>
+          <h3 style={{ fontSize: "1.12rem", fontWeight: 700, color: "#1B2A6B", lineHeight: 1.35, marginBottom: "0.65rem" }}>{n.title}</h3>
+          <p style={{ fontSize: "0.9rem", color: "#64748B", lineHeight: 1.6, marginBottom: "1.1rem", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{n.excerpt}</p>
+          <span style={{ marginTop: "auto", fontSize: "0.85rem", fontWeight: 700, color: "#E23030" }}>Read more →</span>
+        </div>
+      </article>
+    </Link>
+  );
+}
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
@@ -171,29 +121,40 @@ export default function NewsPage() {
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
   const opacityFade = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
+  const [items, setItems] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [page, setPage] = useState(1);
+  const PER_PAGE = 12;
+
+  useEffect(() => {
+    fetch("/api/news?limit=100")
+      .then((r) => r.json())
+      .then((data) => setItems(data.news || []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const years = useMemo(
+    () => Array.from(new Set(items.map((n) => new Date(n.published_at).getFullYear().toString()))).sort().reverse(),
+    [items]
+  );
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return newsRecords
-      .filter(r => {
-        const matchSearch = !q ||
-          r.title.toLowerCase().includes(q) ||
-          r.category.toLowerCase().includes(q) ||
-          r.author.toLowerCase().includes(q);
-        const matchYear = !yearFilter || r.datePublished.startsWith(yearFilter);
+    return items
+      .filter((n) => {
+        const matchSearch = !q || n.title.toLowerCase().includes(q) || n.excerpt.toLowerCase().includes(q) || n.category.toLowerCase().includes(q);
+        const matchYear = !yearFilter || n.published_at.startsWith(yearFilter);
         return matchSearch && matchYear;
       })
-      .sort((a, b) => new Date(b.datePublished).getTime() - new Date(a.datePublished).getTime());
-  }, [search, yearFilter]);
+      .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+  }, [items, search, yearFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paged = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
-  const handleSearch = (v: string) => { setSearch(v); setPage(1); };
-  const handleYear   = (v: string) => { setYearFilter(v); setPage(1); };
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const pageClamped = Math.min(page, totalPages);
+  const paged = filtered.slice((pageClamped - 1) * PER_PAGE, pageClamped * PER_PAGE);
 
   return (
     <main style={{ paddingBottom: "8rem", backgroundColor: "var(--bg-primary)", overflowX: "hidden" }}>
@@ -228,74 +189,55 @@ export default function NewsPage() {
         <TabNav active="news" />
 
         {/* Toolbar */}
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ position: "relative", flex: "1 1 260px", maxWidth: "380px" }}>
             <div style={{ position: "absolute", top: "50%", transform: "translateY(-50%)", left: "0.9rem", color: "#94A3B8", pointerEvents: "none" }}><SearchIcon /></div>
-            <input type="text" placeholder="Search by title, category, author…"
-              value={search} onChange={e => handleSearch(e.target.value)}
+            <input type="text" placeholder="Search news by title, category…"
+              value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
               style={{ width: "100%", padding: "0.7rem 1rem 0.7rem 2.6rem", border: "1.5px solid #E2E8F0", borderRadius: "8px", fontSize: "0.875rem", color: "#1E293B", backgroundColor: "white", outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => e.target.style.borderColor = "#1B2A6B"} onBlur={e => e.target.style.borderColor = "#E2E8F0"} />
           </div>
-          <select value={yearFilter} onChange={e => handleYear(e.target.value)}
+          <select value={yearFilter} onChange={e => { setYearFilter(e.target.value); setPage(1); }}
             style={{ padding: "0.7rem 1rem", border: "1.5px solid #E2E8F0", borderRadius: "8px", fontSize: "0.875rem", color: "#1E293B", backgroundColor: "white", cursor: "pointer", outline: "none" }}>
             <option value="">All Years</option>
-            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <div style={{ marginLeft: "auto", fontSize: "0.85rem", color: "#64748B", whiteSpace: "nowrap" }}>
-            Showing <strong style={{ color: "#1B2A6B" }}>{paged.length}</strong> of <strong style={{ color: "#1B2A6B" }}>{filtered.length}</strong> records
+            <strong style={{ color: "#1B2A6B" }}>{filtered.length}</strong> article{filtered.length === 1 ? "" : "s"}
           </div>
         </div>
 
-        {/* Table */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
-              <thead>
-                <tr style={{ backgroundColor: "#1B2A6B" }}>
-                  <TH width="52px">S/N</TH>
-                  <TH width="110px">Date Published</TH>
-                  <TH>Title</TH>
-                  <TH width="130px">Category</TH>
-                  <TH width="160px">Author</TH>
-                  <TH width="100px">Status</TH>
-                  <TH width="80px">Download</TH>
-                </tr>
-              </thead>
-              <tbody>
-                {paged.length > 0 ? paged.map((r, idx) => {
-                  const rowBg = idx % 2 === 0 ? "white" : "#F8FAFC";
-                  return (
-                    <tr key={r.sn} style={{ backgroundColor: rowBg, transition: "background 0.15s", cursor: "default" }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#EEF2FF")}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = rowBg)}>
-                      <TD muted>{(page - 1) * ITEMS_PER_PAGE + idx + 1}</TD>
-                      <TD muted>{formatDate(r.datePublished)}</TD>
-                      <TD>{r.title}</TD>
-                      <TD><CategoryBadge category={r.category} /></TD>
-                      <TD muted>{r.author}</TD>
-                      <TD><StatusBadge status={r.status} /></TD>
-                      <td style={{ padding: "0.9rem 1rem", verticalAlign: "middle", borderBottom: "1px solid #F1F5F9" }}><DownloadBtn /></td>
-                    </tr>
-                  );
-                }) : (
-                  <tr><td colSpan={7} style={{ padding: "4rem 2rem", textAlign: "center", color: "#94A3B8" }}><div style={{ fontSize: "0.95rem" }}>No records match your search criteria.</div></td></tr>
-                )}
-              </tbody>
-            </table>
+        {/* Grid */}
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "5rem 0", color: "#94A3B8" }}>
+            <div style={{ width: 36, height: 36, margin: "0 auto 1rem", border: "3px solid #e2e8f0", borderTopColor: "#1B2A6B", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { to { transform: rotate(360deg); } }` }} />
+            Loading news…
           </div>
-          {totalPages > 1 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.5rem", borderTop: "1px solid #F1F5F9", backgroundColor: "white", flexWrap: "wrap", gap: "1rem" }}>
-              <span style={{ fontSize: "0.85rem", color: "#64748B" }}>Page {page} of {totalPages}</span>
-              <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", border: "1.5px solid #E2E8F0", backgroundColor: "white", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.4 : 1, transition: "all 0.15s", color: "#1B2A6B" }}><ChevronIcon dir="left" /></button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                  <button key={n} onClick={() => setPage(n)} style={{ width: "36px", height: "36px", borderRadius: "8px", border: n === page ? "1.5px solid #1B2A6B" : "1.5px solid #E2E8F0", backgroundColor: n === page ? "#1B2A6B" : "white", color: n === page ? "white" : "#1B2A6B", fontSize: "0.85rem", fontWeight: n === page ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>{n}</button>
-                ))}
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", border: "1.5px solid #E2E8F0", backgroundColor: "white", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.4 : 1, transition: "all 0.15s", color: "#1B2A6B" }}><ChevronIcon dir="right" /></button>
-              </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "5rem 2rem", color: "#94A3B8" }}>
+            <p style={{ fontSize: "1rem" }}>{items.length === 0 ? "No news articles have been published yet." : "No articles match your search."}</p>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.75rem" }}>
+              {paged.map((n) => <NewsCard key={n.id} n={n} />)}
             </div>
-          )}
-        </div>
+
+            {totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginTop: "2.5rem" }}>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={pageClamped === 1}
+                  style={{ width: 38, height: 38, borderRadius: 8, border: "1.5px solid #E2E8F0", background: "white", color: "#1B2A6B", cursor: pageClamped === 1 ? "not-allowed" : "pointer", opacity: pageClamped === 1 ? 0.4 : 1 }}>‹</button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                  <button key={n} onClick={() => setPage(n)}
+                    style={{ width: 38, height: 38, borderRadius: 8, border: n === pageClamped ? "1.5px solid #1B2A6B" : "1.5px solid #E2E8F0", background: n === pageClamped ? "#1B2A6B" : "white", color: n === pageClamped ? "white" : "#1B2A6B", fontWeight: n === pageClamped ? 700 : 500, cursor: "pointer" }}>{n}</button>
+                ))}
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={pageClamped === totalPages}
+                  style={{ width: 38, height: 38, borderRadius: 8, border: "1.5px solid #E2E8F0", background: "white", color: "#1B2A6B", cursor: pageClamped === totalPages ? "not-allowed" : "pointer", opacity: pageClamped === totalPages ? 0.4 : 1 }}>›</button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </main>
   );

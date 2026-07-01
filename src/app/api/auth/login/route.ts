@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { signToken } from '@/lib/auth';
-import * as crypto from 'crypto';
-
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password + 'nsib_salt').digest('hex');
-}
+import { query } from '@/lib/db';
+import { signPreAuthToken, PRE_COOKIE, preCookieOptions } from '@/lib/auth';
+import { verifyPassword } from '@/lib/password';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,30 +12,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const passwordHash = hashPassword(password);
+    const rows = await query<{
+      id: string; email: string; full_name: string; role: string;
+      password_hash: string; totp_enabled: boolean;
+    }>(
+      'SELECT id, email, full_name, role, password_hash, totp_enabled FROM users WHERE email = $1 LIMIT 1',
+      [email]
+    );
+    const user = rows[0];
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, full_name, role, password_hash')
-      .eq('email', email)
-      .single();
-
-    if (error || !user || user.password_hash !== passwordHash) {
+    if (!user || !verifyPassword(password, user.password_hash)) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    const token = await signToken({ userId: user.id, email: user.email, role: user.role });
-
-    const { password_hash: _, ...safeUser } = user;
-    const response = NextResponse.json({ user: safeUser, message: 'Login successful' });
-    response.cookies.set('nsib_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
-
+    // Password OK — issue a pre-auth token; the real session comes after 2FA.
+    const pre = await signPreAuthToken({ userId: user.id, email: user.email, role: user.role });
+    const response = NextResponse.json(
+      user.totp_enabled ? { needs2fa: true } : { needsEnrollment: true }
+    );
+    response.cookies.set(PRE_COOKIE, pre, preCookieOptions);
     return response;
   } catch (err) {
     console.error('Login error:', err);

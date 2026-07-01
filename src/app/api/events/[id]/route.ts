@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { query } from "@/lib/db";
 
 export async function GET(
   _request: Request,
@@ -7,27 +7,25 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const { data: event, error } = await supabaseAdmin
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .eq("status", "published")
-    .single();
+  const rows = await query<{ id: string; category: string }>(
+    "SELECT * FROM events WHERE id = $1 AND status = 'published' LIMIT 1",
+    [id]
+  );
+  const event = rows[0];
 
-  if (error || !event) {
+  if (!event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  // Fetch related events (same category, upcoming, excluding this one)
-  const { data: related } = await supabaseAdmin
-    .from("events")
-    .select("id, title, event_date, location, category")
-    .eq("status", "published")
-    .eq("category", event.category)
-    .neq("id", id)
-    .gte("event_date", new Date().toISOString())
-    .order("event_date", { ascending: true })
-    .limit(3);
+  // Related events: same category, upcoming, excluding this one
+  const related = await query(
+    `SELECT id, title, event_date, location, category
+       FROM events
+      WHERE status = 'published' AND category = $1 AND id <> $2 AND event_date >= $3
+      ORDER BY event_date ASC
+      LIMIT 3`,
+    [event.category, id, new Date().toISOString()]
+  );
 
-  return NextResponse.json({ event, related: related || [] });
+  return NextResponse.json({ event, related });
 }

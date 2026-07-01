@@ -1,0 +1,25 @@
+# NSIB — local Postgres. Runs the DB only; the Next app runs on the host (npm run dev).
+# On the client's server, mount a persistent volume for pgdata AND for public/uploads.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nsib
+      POSTGRES_PASSWORD: nsib
+      POSTGRES_DB: nsib
+    # Host 5433 (not 5432) to avoid clashing with any native Postgres already on 5432.
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # init.sql runs once, on first boot of an empty data volume
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nsib -d nsib"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

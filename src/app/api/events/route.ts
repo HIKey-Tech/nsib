@@ -1,29 +1,30 @@
 import { NextResponse } from "next/server";
-import { supabase, supabaseAdmin } from "@/lib/supabase";
+import { query } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
-// GET — public: returns upcoming/all events
+// GET — public: returns upcoming/all published events
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const limit = parseInt(searchParams.get("limit") || "20");
   const upcoming = searchParams.get("upcoming") === "true";
 
-  let query = supabaseAdmin
-    .from("events")
-    .select("*")
-    .eq("status", "published")
-    .order("event_date", { ascending: true })
-    .limit(limit);
-
+  const vals: unknown[] = ["published"];
+  let sql = "SELECT * FROM events WHERE status = $1";
   if (upcoming) {
-    query = query.gte("event_date", new Date().toISOString());
+    vals.push(new Date().toISOString());
+    sql += ` AND event_date >= $${vals.length}`;
   }
+  vals.push(limit);
+  sql += ` ORDER BY event_date ASC LIMIT $${vals.length}`;
 
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ events: data || [] });
+  try {
+    const events = await query(sql, vals);
+    return NextResponse.json({ events });
+  } catch (err) {
+    console.error("Events fetch error:", err);
+    return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
+  }
 }
 
 // POST — authenticated: create an event
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
 
   const payload = await verifyToken(token);
   if (!payload) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+  // Only admins may manage content.
+  if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
   const { title, description, event_date, end_date, location, category, image_url, registration_link } = body;
@@ -42,26 +45,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Title and event date are required" }, { status: 400 });
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("events")
-    .insert([{
-      title,
-      description: description || "",
-      event_date,
-      end_date: end_date || null,
-      location: location || "",
-      category: category || "general",
-      image_url: image_url || null,
-      registration_link: registration_link || null,
-      status: "published",
-      created_at: new Date().toISOString(),
-      organizer_name: payload.email,
-    }])
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ event: data }, { status: 201 });
+  try {
+    const rows = await query(
+      `INSERT INTO events (title, description, event_date, end_date, location, category,
+                           image_url, registration_link, status, organizer_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'published', $9)
+       RETURNING *`,
+      [
+        title,
+        description || "",
+        event_date,
+        end_date || null,
+        location || "",
+        category || "general",
+        image_url || null,
+        registration_link || null,
+        payload.email,
+      ]
+    );
+    return NextResponse.json({ event: rows[0] }, { status: 201 });
+  } catch (err) {
+    console.error("Event create error:", err);
+    return NextResponse.json({ error: "Failed to create event" }, { status: 500 });
+  }
 }
 
 // DELETE — authenticated: delete an event
@@ -72,13 +78,18 @@ export async function DELETE(request: Request) {
 
   const payload = await verifyToken(token);
   if (!payload) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+  // Only admins may manage content.
+  if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Event ID required" }, { status: 400 });
 
-  const { error } = await supabaseAdmin.from("events").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ success: true });
+  try {
+    await query("DELETE FROM events WHERE id = $1", [id]);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Event delete error:", err);
+    return NextResponse.json({ error: "Failed to delete event" }, { status: 500 });
+  }
 }

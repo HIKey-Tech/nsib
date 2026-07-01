@@ -1,3 +1,12 @@
+import { pageMeta } from "@/lib/site";
+
+export const metadata = pageMeta({
+  title: "Frequently Asked Questions",
+  description:
+    "Answers to common questions about the Nigerian Safety Investigation Bureau (NSIB) — its mandate, how investigations work, and how to report an accident.",
+  path: "/faqs",
+});
+
 export default function FaqsPage() {
   return (
     <main style={{ paddingBottom: '6rem' }}>

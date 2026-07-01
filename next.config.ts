@@ -1,12 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Allow Next.js <Image> to load from Supabase Storage when in demo mode.
   images: {
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "gfwuuliuyzvkwwzsdujr.supabase.co",
-        pathname: "/storage/v1/object/public/**",
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },

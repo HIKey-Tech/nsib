@@ -73,7 +73,7 @@ export default function Navbar() {
             <Link href="/about">About <span className={styles.chevron}>▼</span></Link>
             <div className={styles.dropdown}>
               <Link href="/team" className={styles.dropdownLink}>Management Team</Link>
-              <Link href="/history" className={styles.dropdownLink}>History</Link>
+              <Link href="/history" className={styles.dropdownLink}>The Bureau</Link>
             </div>
           </div>
 
@@ -93,7 +93,7 @@ export default function Navbar() {
               <Link href="/help-desk" className={styles.dropdownLink}>Operational Help Desk</Link>
               <Link href="/open-ticket" className={styles.dropdownLink}>Check Existing Tickets</Link>
               <Link href="/login" className={styles.dropdownLink}>Sign up to OLC</Link>
-              <Link href="/reporting-guidelines" className={styles.dropdownLink}>Reporting Guidelines</Link>
+              <Link href="/reporting-guidelines" className={styles.dropdownLink}>Accident Reporting Guidelines</Link>
             </div>
           </div>
 

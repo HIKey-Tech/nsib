@@ -26,64 +26,7 @@ const CAT_META: Record<string, { bg: string; text: string; dot: string; label: s
   general:      { bg: "rgba(100,116,139,0.1)",  text: "#475569", dot: "#475569", label: "General" },
 };
 
-const PLACEHOLDER_EVENTS: Event[] = [
-  {
-    id: "ph-1",
-    title: "Annual Transport Safety Summit 2026",
-    description: "A national gathering of safety professionals, policymakers, and industry stakeholders to advance transportation safety across Nigeria.",
-    event_date: "2026-06-15T09:00:00",
-    end_date: "2026-06-16T17:00:00",
-    location: "Transcorp Hilton, Abuja",
-    category: "conference",
-    registration_link: "#",
-  },
-  {
-    id: "ph-2",
-    title: "Aviation Accident Investigation Workshop",
-    description: "A technical workshop for investigators and aviation professionals on modern accident investigation methodologies and ICAO Annex 13 compliance.",
-    event_date: "2026-07-08T08:30:00",
-    end_date: "2026-07-10T16:00:00",
-    location: "NSIB Headquarters, Abuja",
-    category: "workshop",
-    registration_link: "#",
-  },
-  {
-    id: "ph-3",
-    title: "Maritime Safety Awareness Seminar",
-    description: "Raising awareness about safety protocols in Nigerian waterways and best practices for maritime operators.",
-    event_date: "2026-08-20T10:00:00",
-    location: "NIMASA Complex, Lagos",
-    category: "seminar",
-  },
-  {
-    id: "ph-4",
-    title: "Rail Safety Emergency Drill",
-    description: "Simulated emergency response exercise for railway operators and first responders across the nation.",
-    event_date: "2026-09-05T07:00:00",
-    location: "Lagos-Ibadan Railway Corridor",
-    category: "safety_drill",
-  },
-  {
-    id: "ph-5",
-    title: "Safety Data Analysis Training",
-    description: "A specialized training program on data-driven safety management systems for transport sector professionals.",
-    event_date: "2026-10-14T09:00:00",
-    end_date: "2026-10-16T17:00:00",
-    location: "NSIB Training Centre, Abuja",
-    category: "training",
-  },
-  {
-    id: "ph-6",
-    title: "Annual Finanical Audit Summit",
-    description: "This is financial.",
-    event_date: "2026-04-30T09:00:00",
-    location: "NSIB",
-    category: "general",
-    organizer_name: "NSIB",
-  },
-];
-
-const CATEGORIES = ["all", "conference", "workshop", "seminar", "training", "safety_drill", "general"];
+const CATEGORIES =["all", "conference", "workshop", "seminar", "training", "safety_drill", "general"];
 
 function catMeta(cat: string) {
   return CAT_META[cat] ?? CAT_META.general;
@@ -300,16 +243,18 @@ function EventCard({ event, index }: { event: Event; index: number }) {
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>(PLACEHOLDER_EVENTS);
+  const [events, setEvents] = useState<Event[]>([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [showPast, setShowPast] = useState(false);
+  const [page, setPage] = useState(1);
+  const EVENTS_PER_PAGE = 9;
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/events?limit=100")
       .then(r => r.json())
-      .then(d => { if (d.events?.length) setEvents([...d.events, ...PLACEHOLDER_EVENTS]); })
+      .then(d => setEvents(d.events || []))
       .catch(() => {});
   }, []);
 
@@ -328,6 +273,12 @@ export default function EventsPage() {
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, filter, showPast, search]);
+
+  useEffect(() => { setPage(1); }, [filter, showPast, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / EVENTS_PER_PAGE));
+  const pageClamped = Math.min(page, totalPages);
+  const pagedEvents = filtered.slice((pageClamped - 1) * EVENTS_PER_PAGE, pageClamped * EVENTS_PER_PAGE);
 
   const scrollToGrid = () => {
     gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -508,11 +459,26 @@ export default function EventsPage() {
             <p style={{ fontSize: "0.95rem" }}>Try adjusting your filters or search terms.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))", gap: "1.75rem" }}>
-            {filtered.map((event, i) => (
-              <EventCard key={event.id} event={event} index={i} />
-            ))}
-          </div>
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))", gap: "1.75rem" }}>
+              {pagedEvents.map((event, i) => (
+                <EventCard key={event.id} event={event} index={i} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginTop: "2.5rem" }}>
+                <button onClick={() => { setPage(p => Math.max(1, p - 1)); scrollToGrid(); }} disabled={pageClamped === 1}
+                  style={{ width: 38, height: 38, borderRadius: 8, border: "1.5px solid #E2E8F0", background: "white", color: "#1B2A6B", cursor: pageClamped === 1 ? "not-allowed" : "pointer", opacity: pageClamped === 1 ? 0.4 : 1 }}>‹</button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                  <button key={n} onClick={() => { setPage(n); scrollToGrid(); }}
+                    style={{ width: 38, height: 38, borderRadius: 8, border: n === pageClamped ? "1.5px solid #1B2A6B" : "1.5px solid #E2E8F0", background: n === pageClamped ? "#1B2A6B" : "white", color: n === pageClamped ? "white" : "#1B2A6B", fontWeight: n === pageClamped ? 700 : 500, cursor: "pointer" }}>{n}</button>
+                ))}
+                <button onClick={() => { setPage(p => Math.min(totalPages, p + 1)); scrollToGrid(); }} disabled={pageClamped === totalPages}
+                  style={{ width: 38, height: 38, borderRadius: 8, border: "1.5px solid #E2E8F0", background: "white", color: "#1B2A6B", cursor: pageClamped === totalPages ? "not-allowed" : "pointer", opacity: pageClamped === totalPages ? 0.4 : 1 }}>›</button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </main>

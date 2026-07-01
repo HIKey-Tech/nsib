@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { saveUpload } from '@/lib/storage';
 import { verifyToken, getTokenFromCookie } from '@/lib/auth';
 
-// POST /api/reports/upload - upload a file to Supabase Storage
+// POST /api/reports/upload - store a report file on the server's disk
 export async function POST(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie');
   const token = getTokenFromCookie(cookieHeader);
@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
   if (!payload) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  // Both staff and admin can upload files.
 
   try {
     const formData = await request.formData();
@@ -42,36 +43,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Maximum size is 50MB.' }, { status: 400 });
     }
 
-    const timestamp = Date.now();
-    const ext = file.name.split('.').pop();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `reports/${timestamp}_${sanitizedName}`;
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
-
-    const { data, error } = await supabase.storage
-      .from('nsib')
-      .upload(storagePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Storage upload error:', error);
-      return NextResponse.json({ error: 'Upload failed: ' + error.message }, { status: 500 });
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('nsib')
-      .getPublicUrl(data.path);
+    const saved = await saveUpload('reports', file);
 
     return NextResponse.json({
-      url: publicUrl,
-      path: data.path,
-      name: file.name,
-      size: file.size,
-      type: file.type,
+      url: saved.url,
+      path: saved.url,
+      name: saved.name,
+      size: saved.size,
+      type: saved.type,
     });
   } catch (err) {
     console.error('Upload error:', err);

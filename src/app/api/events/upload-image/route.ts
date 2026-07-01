@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { saveUpload } from '@/lib/storage';
 import { verifyToken, getTokenFromCookie } from '@/lib/auth';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
   const token = getTokenFromCookie(request.headers.get('cookie'));
   const payload = token ? await verifyToken(token) : null;
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (payload.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
     const formData = await request.formData();
@@ -20,19 +21,8 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_SIZE)
       return NextResponse.json({ error: 'Image too large. Maximum size is 10MB.' }, { status: 400 });
 
-    const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `event-flyers/${timestamp}_${sanitizedName}`;
-
-    const buffer = new Uint8Array(await file.arrayBuffer());
-    const { data, error } = await supabase.storage
-      .from('nsib')
-      .upload(storagePath, buffer, { contentType: file.type, upsert: false });
-
-    if (error) return NextResponse.json({ error: 'Upload failed: ' + error.message }, { status: 500 });
-
-    const { data: { publicUrl } } = supabase.storage.from('nsib').getPublicUrl(data.path);
-    return NextResponse.json({ url: publicUrl, name: file.name, size: file.size });
+    const saved = await saveUpload('event-flyers', file);
+    return NextResponse.json({ url: saved.url, name: saved.name, size: saved.size });
   } catch (err) {
     console.error('Event flyer upload error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { FadeIn, StaggerContainer, StaggerItem, ScaleHover } from "@/components/ui/MotionWrapper";
 import { directorates } from "./data";
+import { pageMeta } from "@/lib/site";
+
+export const metadata = pageMeta({
+  title: "Directorates",
+  description:
+    "Explore the directorates, departments and organisational structure of the Nigerian Safety Investigation Bureau (NSIB).",
+  path: "/directorates",
+});
 
 export default function DirectoratesPage() {
   return (

@@ -1,88 +1,145 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { query } from '@/lib/db';
 import { verifyToken, getTokenFromCookie } from '@/lib/auth';
 
-// GET /api/reports - list all published reports (public) or all for authed user
+export const dynamic = 'force-dynamic';
+
+
+const REPORT_FIELDS = `id, report_no, sector, type, report_status, operator, reg_no,
+  vehicle_type, train_name, occurrence, title, description,
+  file_url, file_name, file_size, published_at, created_at, status, uploader_name`;
+
+const SECTOR_PREFIX: Record<string, string> = {
+  aviation: 'AIR',
+  maritime: 'MAR',
+  railway: 'RAIL',
+};
+
+// Auto-generate the next REPORT NO for a sector+year, e.g. NSIB/AIR/2026/001.
+// ponytail: max-suffix+1 with a UNIQUE index + one retry; fine for admin-rate uploads.
+async function nextReportNo(sector: string, year: number): Promise<string> {
+  const prefix = SECTOR_PREFIX[sector] ?? 'GEN';
+  const like = `NSIB/${prefix}/${year}/%`;
+  const rows = await query<{ report_no: string }>(
+    'SELECT report_no FROM reports WHERE report_no LIKE $1',
+    [like]
+  );
+  let max = 0;
+  for (const r of rows) {
+    const n = parseInt(r.report_no.split('/').pop() || '0', 10);
+    if (n > max) max = n;
+  }
+  return `NSIB/${prefix}/${year}/${String(max + 1).padStart(3, '0')}`;
+}
+
+// GET /api/reports - list reports. Public sees only published; authed sees all.
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type');
+  const sector = searchParams.get('type'); // filters by sector (aviation|maritime|railway)
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
   const offset = (page - 1) * limit;
 
-  let query = supabase
-    .from('reports')
-    .select('id, title, type, sector, description, file_url, file_name, file_size, published_at, created_at, status, uploader_name')
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  // Check if requester is authenticated (if so, return all; otherwise only published)
-  const cookieHeader = request.headers.get('cookie');
-  const token = getTokenFromCookie(cookieHeader);
+  const token = getTokenFromCookie(request.headers.get('cookie'));
   const payload = token ? await verifyToken(token) : null;
 
+  const where: string[] = [];
+  const vals: unknown[] = [];
   if (!payload) {
-    query = query.eq('status', 'published');
+    // Public: only published reports
+    vals.push('published');
+    where.push(`status = $${vals.length}`);
+  } else if (payload.role === 'staff') {
+    // Staff: only their own submissions (any status)
+    vals.push(payload.userId);
+    where.push(`uploaded_by = $${vals.length}`);
   }
-
-  if (type) {
-    query = query.eq('sector', type);
+  // Admin: sees everything — no filter added
+  if (sector) {
+    vals.push(sector);
+    where.push(`sector = $${vals.length}`);
   }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-  const { data, error, count } = await query;
-
-  if (error) {
-    console.error('Reports fetch error:', error);
+  try {
+    const reports = await query(
+      `SELECT ${REPORT_FIELDS} FROM reports ${whereSql}
+        ORDER BY published_at DESC, created_at DESC
+        LIMIT $${vals.length + 1} OFFSET $${vals.length + 2}`,
+      [...vals, limit, offset]
+    );
+    const countRows = await query<{ count: number }>(
+      `SELECT COUNT(*)::int AS count FROM reports ${whereSql}`,
+      vals
+    );
+    return NextResponse.json({ reports, total: countRows[0].count });
+  } catch (err) {
+    console.error('Reports fetch error:', err);
     return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
   }
-
-  return NextResponse.json({ reports: data || [], total: count });
 }
 
-// POST /api/reports - create new report record (authenticated)
+// POST /api/reports - create a report. Admin → published immediately. Staff → draft pending approval.
 export async function POST(request: NextRequest) {
-  const cookieHeader = request.headers.get('cookie');
-  const token = getTokenFromCookie(cookieHeader);
+  const token = getTokenFromCookie(request.headers.get('cookie'));
   const payload = token ? await verifyToken(token) : null;
-
   if (!payload) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const body = await request.json();
-    const { title, type, sector, description, file_url, file_name, file_size, published_at } = body;
+    const {
+      sector, operator, reg_no, vehicle_type, train_name, occurrence,
+      report_status, description, file_url, file_name, file_size, published_at, type,
+    } = body;
 
-    if (!title || !sector || !file_url) {
-      return NextResponse.json({ error: 'Title, sector, and file are required' }, { status: 400 });
+    if (!sector || !SECTOR_PREFIX[sector]) {
+      return NextResponse.json({ error: 'A valid sector is required' }, { status: 400 });
+    }
+    if (!occurrence) {
+      return NextResponse.json({ error: 'Occurrence is required' }, { status: 400 });
+    }
+    if (!file_url) {
+      return NextResponse.json({ error: 'A report file is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
-      .from('reports')
-      .insert({
-        title,
-        type: type || 'final',
-        sector,
-        description,
-        file_url,
-        file_name,
-        file_size,
-        published_at: published_at || new Date().toISOString(),
-        status: 'published',
-        uploaded_by: payload.userId,
-        uploader_name: payload.email,
-      })
-      .select()
-      .single();
+    // Admin → published straight away. Staff → draft awaiting admin approval.
+    const status = payload.role === 'admin' ? 'published' : 'draft';
+    const releasedAt = published_at || new Date().toISOString();
+    const year = new Date(releasedAt).getFullYear();
+    const title = operator ? `${operator} — ${occurrence}` : occurrence;
 
-    if (error) {
-      console.error('Report insert error:', error);
-      return NextResponse.json({ error: 'Failed to save report' }, { status: 500 });
+    // Retry once if two uploads race to the same auto-number.
+    let saved;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const reportNo = await nextReportNo(sector, year);
+      try {
+        const rows = await query(
+          `INSERT INTO reports
+             (report_no, sector, type, report_status, operator, reg_no, vehicle_type,
+              train_name, occurrence, title, description, file_url, file_name, file_size,
+              published_at, status, uploaded_by, uploader_name)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+           RETURNING ${REPORT_FIELDS}`,
+          [
+            reportNo, sector, type || 'final', report_status ?? null, operator ?? null,
+            reg_no ?? null, vehicle_type ?? null, train_name ?? null, occurrence, title,
+            description ?? null, file_url, file_name ?? null, file_size ?? null,
+            releasedAt, status, payload.userId, payload.email,
+          ]
+        );
+        saved = rows[0];
+        break;
+      } catch (e: unknown) {
+        if (attempt === 0 && (e as { code?: string })?.code === '23505') continue;
+        throw e;
+      }
     }
 
-    return NextResponse.json({ report: data }, { status: 201 });
+    return NextResponse.json({ report: saved }, { status: 201 });
   } catch (err) {
     console.error('Report creation error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save report' }, { status: 500 });
   }
 }

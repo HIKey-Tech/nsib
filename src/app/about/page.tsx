@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { FadeIn, StaggerContainer, StaggerItem, ScaleHover } from "@/components/ui/MotionWrapper";
+import { pageMeta } from "@/lib/site";
+
+export const metadata = pageMeta({
+  title: "About the Bureau",
+  description:
+    "The Nigerian Safety Investigation Bureau (NSIB) is an independent federal agency mandated to investigate aviation, maritime and railway accidents — determining causes, not apportioning blame.",
+  path: "/about",
+});
 
 const modes = [
   {

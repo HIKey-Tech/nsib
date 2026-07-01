@@ -588,6 +588,20 @@
 }
 
 /* Form fields */
+.formCard {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.5rem;
+}
+
+.formCardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--nsib-navy);
+  margin-bottom: 1.25rem;
+}
+
 .formGroup {
   display: flex;
   flex-direction: column;
@@ -1109,5 +1123,140 @@
     grid-template-columns: 1fr;
     gap: 0.3rem;
     padding: 1rem;
+  }
+}
+
+/* ── Analytics ─────────────────────────────── */
+.chartCard,
+.listCard {
+  background: var(--nsib-white, #fff);
+  border: 1px solid var(--nsib-gray-200, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem 1.75rem;
+  margin-top: 1.5rem;
+}
+
+.chartBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 160px;
+  margin-top: 1.25rem;
+}
+
+.bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.barFill {
+  width: 100%;
+  min-height: 2px;
+  background: linear-gradient(180deg, var(--nsib-navy, #1b2a6b), #3a4da0);
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s ease, background 0.15s ease;
+}
+
+.bar:hover .barFill {
+  background: var(--nsib-red, #e23030);
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--nsib-slate-light, #94a3b8);
+  font-weight: 600;
+}
+
+.analyticsCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.analyticsCols .listCard {
+  margin-top: 1.5rem;
+}
+
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1.1rem;
+}
+
+.rankRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.rankLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.rankText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: var(--nsib-navy, #1b2a6b);
+  font-weight: 600;
+}
+
+.rankTag {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 5px;
+  background: rgba(27, 42, 107, 0.08);
+  color: var(--nsib-navy, #1b2a6b);
+}
+
+.rankBarTrack {
+  height: 8px;
+  background: var(--nsib-gray-100, #f1f5f9);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.rankBarFill {
+  height: 100%;
+  min-width: 4px;
+  background: linear-gradient(90deg, var(--nsib-navy, #1b2a6b), #4256a8);
+  border-radius: 5px;
+}
+
+.rankCount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nsib-navy, #1b2a6b);
+  text-align: right;
+  min-width: 2.5rem;
+}
+
+.emptyNote {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--nsib-slate-light, #94a3b8);
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .analyticsCols {
+    grid-template-columns: 1fr;
   }
 }

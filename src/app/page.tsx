@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./page.module.css";
@@ -15,6 +15,8 @@ interface Report {
   type: string;
   sector: "aviation" | "maritime" | "railway";
   description?: string;
+  report_status?: string;
+  occurrence?: string;
   file_url: string;
   published_at: string;
   status: string;
@@ -41,9 +43,9 @@ interface Event {
 }
 
 const SECTOR_IMAGES: Record<string, string> = {
-  aviation: "https://images.unsplash.com/photo-1542296332-2e4473faf563?q=80&w=2070&auto=format&fit=crop",
+  aviation: "/images/air.jpg",
   maritime: "/images/new_maritime.jpg",
-  railway: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=2084&auto=format&fit=crop",
+  railway: "/images/trainstation.jpg",
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -59,32 +61,17 @@ const SECTOR_LABEL: Record<string, string> = {
   railway: "Railway",
 };
 
-const PLACEHOLDER_REPORTS = [
-  { type: "Aviation", title: "Preliminary Report on Aircraft Incident at MMIA", date: "Oct 12, 2024", status: "Preliminary", image: SECTOR_IMAGES.aviation, sector: "aviation", href: "/air-reports" },
-  { type: "Maritime", title: "Investigation into Vessel Collision at Apapa Port", date: "Sep 28, 2024", status: "Ongoing", image: SECTOR_IMAGES.maritime, sector: "maritime", href: "/marine-reports" },
-  { type: "Railway", title: "Final Report on Passenger Train Derailment", date: "Aug 15, 2024", status: "Published", image: SECTOR_IMAGES.railway, sector: "railway", href: "/rail-reports" },
-];
-
-const PLACEHOLDER_NEWS = [
-  { title: "NSIB Signs MoU with Nigerian Navy for Maritime Safety Cooperation", date: "Oct 05, 2024", category: "announcement", id: null, image: null },
-  { title: "Director General Keynote at Annual Transport Safety Summit", date: "Sep 14, 2024", category: "press_release", id: null, image: null },
-  { title: "New Safety Recommendations Issued for Domestic Airlines", date: "Sep 02, 2024", category: "safety", id: null, image: null },
-  { title: "NSIB Commences Investigation into Lagos-Kano Rail Incident", date: "Aug 28, 2024", category: "general", id: null, image: null },
-];
-
-const PLACEHOLDER_EVENTS = [
-  { id: "1", title: "Annual Transport Safety Summit 2025", description: "National gathering of safety professionals and stakeholders.", event_date: "2025-06-15T09:00:00", location: "Transcorp Hilton, Abuja", category: "conference" },
-  { id: "2", title: "Aviation Accident Investigation Workshop", description: "Technical workshop on modern investigation methodologies.", event_date: "2025-07-08T08:30:00", location: "NSIB Headquarters, Abuja", category: "workshop" },
-  { id: "3", title: "Maritime Safety Awareness Seminar", description: "Raising awareness about safety protocols in Nigerian waterways.", event_date: "2025-08-20T10:00:00", location: "NIMASA Complex, Lagos", category: "seminar" },
-];
+const ic = (path: ReactNode) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{path}</svg>
+);
 
 const DOWNLOAD_RESOURCES = [
-  { title: "Investigation Manuals", desc: "Official NSIB investigation procedures and guidelines", href: "/investigation-manuals", icon: "📋", count: "12 Manuals" },
-  { title: "Forms & Checklists", desc: "Standardised investigation forms and safety checklists", href: "/investigation-forms-and-checklists", icon: "✅", count: "24 Forms" },
-  { title: "Accident Reports", desc: "Published final and preliminary investigation reports", href: "/publications", icon: "📄", count: "150+ Reports" },
-  { title: "Legislations", desc: "Acts, regulations and legal frameworks governing NSIB", href: "/legislations", icon: "⚖️", count: "8 Documents" },
-  { title: "MoU Documents", desc: "Memoranda of understanding with partner agencies", href: "/mou", icon: "🤝", count: "15 MoUs" },
-  { title: "Reporting Guidelines", desc: "How to report accidents and safety occurrences", href: "/reporting-guidelines", icon: "📢", count: "Guide" },
+  { title: "Investigation Manuals", desc: "Official NSIB investigation procedures and guidelines", href: "/investigation-manuals", icon: ic(<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></>), count: "Manuals" },
+  { title: "Forms & Checklists", desc: "Standardised investigation forms and safety checklists", href: "/investigation-forms-and-checklists", icon: ic(<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>), count: "Forms" },
+  { title: "Accident Reports", desc: "Published final and preliminary investigation reports", href: "/publications", icon: ic(<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /></>), count: "Reports" },
+  { title: "Legislations", desc: "Acts, regulations and legal frameworks governing NSIB", href: "/legislations", icon: ic(<><path d="M12 3v18" /><path d="m3 7 9-4 9 4" /><path d="M5 7v6a7 7 0 0 0 14 0V7" /></>), count: "Legislations" },
+  { title: "MoU Documents", desc: "Memoranda of understanding with partner agencies", href: "/mou", icon: ic(<><path d="M11 17a4 4 0 0 1-8 0V9a4 4 0 0 1 8 0" /><path d="M13 7a4 4 0 0 1 8 0v8a4 4 0 0 1-8 0" /></>), count: "Agreements" },
+  { title: "Reporting Guidelines", desc: "How to report accidents and safety occurrences", href: "/reporting-guidelines", icon: ic(<><path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" /></>), count: "Guidelines" },
 ];
 
 const PARTNERS = [
@@ -230,30 +217,27 @@ export default function Home() {
       .catch(() => { });
   }, []);
 
-  const displayReports = dynamicReports.length >= 3
-    ? dynamicReports.slice(0, 3).map(r => ({
-      type: SECTOR_LABEL[r.sector] || r.sector,
-      title: r.title,
-      date: formatDate(r.published_at),
-      status: TYPE_LABEL[r.type] || r.type,
-      image: SECTOR_IMAGES[r.sector] || SECTOR_IMAGES.aviation,
-      sector: r.sector,
-      href: r.file_url,
-      isDynamic: true,
-    }))
-    : PLACEHOLDER_REPORTS;
+  // Real data only — no mock fallbacks. Sections show an empty state until content is published.
+  const displayReports = dynamicReports.slice(0, 3).map(r => ({
+    type: SECTOR_LABEL[r.sector] || r.sector,
+    title: r.occurrence || r.title,
+    date: formatDate(r.published_at),
+    status: r.report_status || TYPE_LABEL[r.type] || r.type,
+    image: SECTOR_IMAGES[r.sector] || SECTOR_IMAGES.aviation,
+    sector: r.sector,
+    href: r.file_url,
+    isDynamic: true,
+  }));
 
-  const displayNews = dynamicNews.length > 0
-    ? dynamicNews.slice(0, 4).map(n => ({
-      title: n.title,
-      date: formatDate(n.published_at),
-      category: n.category,
-      id: n.id,
-      image: n.image_url || null,
-    }))
-    : PLACEHOLDER_NEWS;
+  const displayNews = dynamicNews.slice(0, 4).map(n => ({
+    title: n.title,
+    date: formatDate(n.published_at),
+    category: n.category,
+    id: n.id,
+    image: n.image_url || null,
+  }));
 
-  const displayEvents = dynamicEvents.length > 0 ? dynamicEvents : PLACEHOLDER_EVENTS;
+  const displayEvents = dynamicEvents;
 
   return (
     <main className={styles.main}>
@@ -359,12 +343,12 @@ export default function Home() {
                     <span>Sectors</span>
                   </div>
                   <div className={styles.statusMetric}>
-                    <strong>100+</strong>
-                    <span>Investigations</span>
+                    <strong>2022</strong>
+                    <span>Established</span>
                   </div>
                   <div className={styles.statusMetric}>
-                    <strong>15+</strong>
-                    <span>Years</span>
+                    <strong>Abuja</strong>
+                    <span>Headquarters</span>
                   </div>
                 </div>
               </div>
@@ -465,8 +449,8 @@ export default function Home() {
           <div className={styles.bureauGrid}>
             {[
               { title: "The Bureau", href: "/about", image: "/images/nsib_building.jpg", desc: "Learn about our mandate, history and independence as Nigeria's foremost safety investigation authority." },
-              { title: "Organisation", href: "/directorates", image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop", desc: "Explore the organizational structure, directorates and departments of the NSIB." },
-              { title: "Management Team", href: "/team", image: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop", desc: "Meet the leadership driving Nigeria's transport safety agenda with purpose and expertise." },
+              { title: "Organisation", href: "/directorates", image: "/images/operations_control_ng.png", desc: "Explore the organizational structure, directorates and departments of the NSIB." },
+              { title: "Management Team", href: "/team", image: "/images/team/dg_nsib.jpg", desc: "Meet the Director General and the management team leading the Bureau." },
             ].map((unit, i) => (
               <ScrollReveal direction="up" delay={0.1 + i * 0.15} distance={30} key={unit.title}>
                 <Link href={unit.href} className={styles.bureauCard}>
@@ -510,8 +494,8 @@ export default function Home() {
             </div>
             <div className={styles.imageOverlay}>
               <div className={styles.statBox}>
-                <span className={styles.statNumber}>15+</span>
-                <span className={styles.statText}>Years of Safety <br />Excellence</span>
+                <span className={styles.statNumber}>2022</span>
+                <span className={styles.statText}>Established by the <br />NSIB Act</span>
               </div>
             </div>
           </ScrollReveal>
@@ -620,9 +604,9 @@ export default function Home() {
           </div>
           <div className={styles.sectorsGrid}>
             {[
-              { id: "aviation", num: "01", tag: "Air", standard: "ICAO Annex 13", title: "Aviation Safety", desc: "Investigating civil aviation occurrences within Nigerian airspace or involving Nigerian registered aircraft globally.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l5 5-3.2 3.2-2.4-.8L2 16l3 3c.6.6 1.4.9 2.2.9h.1c.8-.1 1.5-.4 2.1-.9l.6-.6 3.2-3.2 5 5 1.2-.7c.4-.2.7-.6.6-1.1z" /></svg>, image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop" },
-              { id: "maritime", num: "02", tag: "Sea", standard: "IMO Casualty Code", title: "Maritime Safety", desc: "Conducting impartial investigations into marine casualties and incidents on Nigerian territorial waters.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21h20" /><path d="M12 9V5a2 2 0 0 1 2-2h2" /><path d="M20 21v-4a2 2 0 0 0-2-2h-3.5L12 9l-2.5 6H6a2 2 0 0 0-2 2v4" /></svg>, image: "https://images.unsplash.com/photo-1494412651409-8963ce7935a7?q=80&w=2070&auto=format&fit=crop" },
-              { id: "rail", num: "03", tag: "Rail", standard: "Rail Safety Standards", title: "Railway Safety", desc: "Analyzing railway accidents and serious incidents to improve the safety of the national rail network.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="16" rx="2" /><path d="M4 11h16" /><path d="M12 3v8" /><path d="m8 19-2 3" /><path d="m18 22-2-3" /><path d="M8 15h.01" /><path d="M16 15h.01" /></svg>, image: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=2084&auto=format&fit=crop" },
+              { id: "aviation", num: "01", tag: "Air", standard: "ICAO Annex 13", title: "Aviation Safety", desc: "Investigating civil aviation occurrences within Nigerian airspace or involving Nigerian registered aircraft globally.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.6L3 8l5 5-3.2 3.2-2.4-.8L2 16l3 3c.6.6 1.4.9 2.2.9h.1c.8-.1 1.5-.4 2.1-.9l.6-.6 3.2-3.2 5 5 1.2-.7c.4-.2.7-.6.6-1.1z" /></svg>, image: "/images/air.jpg" },
+              { id: "maritime", num: "02", tag: "Sea", standard: "IMO Casualty Code", title: "Maritime Safety", desc: "Conducting impartial investigations into marine casualties and incidents on Nigerian territorial waters.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21h20" /><path d="M12 9V5a2 2 0 0 1 2-2h2" /><path d="M20 21v-4a2 2 0 0 0-2-2h-3.5L12 9l-2.5 6H6a2 2 0 0 0-2 2v4" /></svg>, image: "/images/maritime.jpg" },
+              { id: "rail", num: "03", tag: "Rail", standard: "Rail Safety Standards", title: "Railway Safety", desc: "Analyzing railway accidents and serious incidents to improve the safety of the national rail network.", icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="16" rx="2" /><path d="M4 11h16" /><path d="M12 3v8" /><path d="m8 19-2 3" /><path d="m18 22-2-3" /><path d="M8 15h.01" /><path d="M16 15h.01" /></svg>, image: "/images/train.jpg" },
             ].map((sector, index) => (
               <ScrollReveal direction="up" delay={0.1 + index * 0.15} distance={40} key={sector.id} className={styles.sectorCard}>
                 <span className={styles.sectorTopBar} aria-hidden="true" />
@@ -665,6 +649,11 @@ export default function Home() {
             <h2>Recent <em>Investigations</em></h2>
           </div>
           <div className={styles.cardsGrid}>
+            {displayReports.length === 0 && (
+              <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "#94a3b8", padding: "2.5rem 0" }}>
+                Published investigation reports will appear here.
+              </p>
+            )}
             {displayReports.slice(0, 3).map((item, index) => (
               <ScrollReveal direction="up" delay={0.2 + index * 0.15} distance={40} key={index} className={styles.investigationCard}>
                 <div className={styles.invImageWrapper}>
@@ -714,13 +703,12 @@ export default function Home() {
               </div>
             </ScrollReveal>
             <ScrollReveal direction="right" delay={0.3} distance={40} className={styles.learningImageWrapper}>
-              <Image 
-                src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=2070&auto=format&fit=crop" 
-                alt="Students learning about safety" 
-                fill 
-                className={styles.learningImage} 
-                sizes="(max-width: 768px) 100vw, 50vw" 
-                unoptimized 
+              <Image
+                src="/images/operations_control.png"
+                alt="NSIB safety training and operations"
+                fill
+                className={styles.learningImage}
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
             </ScrollReveal>
           </div>
@@ -769,6 +757,12 @@ export default function Home() {
                     </div>
                   </Link>
                 </ScrollReveal>
+              )}
+
+              {displayNews.length === 0 && (
+                <p style={{ color: "#94a3b8", padding: "2rem 0" }}>
+                  Latest news and publications will appear here once posted.
+                </p>
               )}
 
               {/* Remaining news items */}

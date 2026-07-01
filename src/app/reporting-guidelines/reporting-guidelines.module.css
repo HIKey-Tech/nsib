@@ -415,6 +415,99 @@
   letter-spacing: 0.01em;
 }
 
+/* ── Legal / Guidelines Content ───────────── */
+.legalCard {
+  background: var(--nsib-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--nsib-gray-200);
+  box-shadow: var(--shadow-sm);
+  padding: 2.5rem;
+}
+
+.lead {
+  font-size: 1.05rem;
+  color: var(--nsib-slate);
+  line-height: 1.75;
+  margin-bottom: 1.75rem;
+}
+
+.legalList {
+  color: var(--nsib-slate);
+  line-height: 1.7;
+  padding-left: 1.4rem;
+  font-size: 0.975rem;
+}
+
+.legalList > li {
+  margin-bottom: 0.7rem;
+  padding-left: 0.35rem;
+}
+
+.legalList ol {
+  margin-top: 0.6rem;
+  padding-left: 1.4rem;
+}
+
+.legalList ol > li {
+  margin-bottom: 0.45rem;
+  padding-left: 0.35rem;
+}
+
+.lvlDecimal { list-style-type: decimal; }
+.lvlAlpha   { list-style-type: lower-alpha; }
+.lvlRoman   { list-style-type: lower-roman; }
+.lvlUpper   { list-style-type: upper-alpha; }
+
+.subhead {
+  font-weight: 700;
+  color: var(--nsib-navy);
+}
+
+.legalList strong {
+  color: var(--nsib-navy);
+}
+
+/* ── Contact chips ────────────────────────── */
+.contactGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.contactItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem 1.25rem;
+  background: var(--nsib-gray-100);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--nsib-gray-200);
+}
+
+.contactLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nsib-slate-light);
+}
+
+.contactValue {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--nsib-navy);
+}
+
+.closing {
+  font-size: 1rem;
+  color: var(--nsib-slate);
+  line-height: 1.75;
+  font-style: italic;
+  border-left: 3px solid var(--nsib-red);
+  padding-left: 1.25rem;
+}
+
 /* ── CTA ──────────────────────────────────── */
 .cta {
   display: flex;
@@ -482,6 +575,14 @@
 
   .detailsGrid {
     grid-template-columns: 1fr;
+  }
+
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .legalCard {
+    padding: 1.75rem 1.5rem;
   }
 
   .timelineItem {

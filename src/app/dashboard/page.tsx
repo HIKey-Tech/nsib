@@ -592,8 +592,14 @@ export default function DashboardPage() {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadFile || !uploadReportNo.trim() || !uploadOccurrence || !uploadSector) {
-      setUploadError("Please provide the report no., occurrence, select a sector, and attach the report file.");
+    const missing = [
+      !uploadReportNo.trim() && "the report no.",
+      !uploadOccurrence.trim() && "the occurrence",
+      !uploadSector && "a transport sector",
+      !uploadFile && "the report file",
+    ].filter(Boolean);
+    if (missing.length) {
+      setUploadError(`Please provide ${missing.join(", ")}.`);
       return;
     }
 

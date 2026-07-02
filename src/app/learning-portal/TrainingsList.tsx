@@ -13,13 +13,6 @@ type Training = {
   end_date: string | null;
 };
 
-const ICONS: Record<string, string> = {
-  aviation: "✈️",
-  maritime: "🚢",
-  railway: "🚆",
-  general: "📚",
-};
-
 function formatWhen(start: string, end: string | null) {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
   const s = new Date(start).toLocaleDateString("en-GB", opts);
@@ -45,7 +38,7 @@ export default function TrainingsList() {
 
   if (trainings.length === 0) {
     return (
-      <div className={styles.comingSoon} style={{ marginBottom: "5rem" }}>
+      <div className={styles.comingSoon} style={{ marginBottom: "3rem" }}>
         <h2>Trainings coming soon!</h2>
         <p>New courses and training sessions will appear here once scheduled.</p>
       </div>
@@ -54,17 +47,19 @@ export default function TrainingsList() {
 
   return (
     <>
-      <div className={styles.coursesGrid}>
+      <div className={styles.trainingList}>
         {trainings.map((t) => (
-          <div key={t.id} className={styles.courseCard}>
-            <div className={styles.courseIcon}>{ICONS[t.category] || ICONS.general}</div>
-            <h3>{t.title}</h3>
-            <p>{t.description}</p>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
-              <div>📅 {formatWhen(t.start_date, t.end_date)}</div>
-              {t.venue && <div>📍 {t.venue}</div>}
+          <div key={t.id} className={styles.trainingRow}>
+            <div className={styles.trainingInfo}>
+              <h3>{t.title}</h3>
+              {t.description && <p>{t.description}</p>}
+              <div className={styles.trainingMeta}>
+                <span>{formatWhen(t.start_date, t.end_date)}</span>
+                {t.venue && <span>{t.venue}</span>}
+                <span className={styles.trainingTag}>{t.category}</span>
+              </div>
             </div>
-            <button className={`btn btn-primary ${styles.actionBtn}`} onClick={() => setEnrolling(t)}>
+            <button className="btn btn-primary" onClick={() => setEnrolling(t)}>
               Enroll Now
             </button>
           </div>
@@ -137,7 +132,6 @@ function EnrollModal({ training, onClose }: { training: Training; onClose: () =>
       >
         {done ? (
           <div style={{ textAlign: "center", padding: "1rem 0" }}>
-            <div style={{ fontSize: "3rem" }}>✅</div>
             <h3 style={{ color: "var(--nsib-navy)", margin: "0.5rem 0" }}>You&apos;re registered!</h3>
             <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               Thanks for enrolling in {training.title}. We&apos;ll be in touch with the details.

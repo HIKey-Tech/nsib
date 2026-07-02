@@ -106,6 +106,7 @@ export default function Navbar() {
               <Link href="/rail-reports" className={styles.dropdownLink}>Rail Accident Reports</Link>
               <Link href="/marine-reports" className={styles.dropdownLink}>Marine Accident Reports</Link>
               <Link href="/air-reports" className={styles.dropdownLink}>Aircraft Accident Reports</Link>
+              <Link href="/other-reports" className={styles.dropdownLink}>Other Accident Reports</Link>
               <Link href="/investigation-forms-and-checklists" className={styles.dropdownLink}>Forms and Checklists</Link>
               <Link href="/investigation-manuals" className={styles.dropdownLink}>Investigation Manuals</Link>
               <Link href="/foi" className={styles.dropdownLink}>FOI</Link>

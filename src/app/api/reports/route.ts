@@ -9,28 +9,7 @@ const REPORT_FIELDS = `id, report_no, sector, type, report_status, operator, reg
   vehicle_type, train_name, occurrence, title, description,
   file_url, file_name, file_size, published_at, created_at, status, uploader_name`;
 
-const SECTOR_PREFIX: Record<string, string> = {
-  aviation: 'AIR',
-  maritime: 'MAR',
-  railway: 'RAIL',
-};
-
-// Auto-generate the next REPORT NO for a sector+year, e.g. NSIB/AIR/2026/001.
-// ponytail: max-suffix+1 with a UNIQUE index + one retry; fine for admin-rate uploads.
-async function nextReportNo(sector: string, year: number): Promise<string> {
-  const prefix = SECTOR_PREFIX[sector] ?? 'GEN';
-  const like = `NSIB/${prefix}/${year}/%`;
-  const rows = await query<{ report_no: string }>(
-    'SELECT report_no FROM reports WHERE report_no LIKE $1',
-    [like]
-  );
-  let max = 0;
-  for (const r of rows) {
-    const n = parseInt(r.report_no.split('/').pop() || '0', 10);
-    if (n > max) max = n;
-  }
-  return `NSIB/${prefix}/${year}/${String(max + 1).padStart(3, '0')}`;
-}
+const VALID_SECTORS = new Set(['aviation', 'maritime', 'railway', 'other']);
 
 // GET /api/reports - list reports. Public sees only published; authed sees all.
 export async function GET(request: NextRequest) {
@@ -90,12 +69,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      sector, operator, reg_no, vehicle_type, train_name, occurrence,
+      report_no, sector, operator, reg_no, vehicle_type, train_name, occurrence,
       report_status, description, file_url, file_name, file_size, published_at, type,
     } = body;
 
-    if (!sector || !SECTOR_PREFIX[sector]) {
+    if (!sector || !VALID_SECTORS.has(sector)) {
       return NextResponse.json({ error: 'A valid sector is required' }, { status: 400 });
+    }
+    if (!report_no || !String(report_no).trim()) {
+      return NextResponse.json({ error: 'Report No. is required' }, { status: 400 });
     }
     if (!occurrence) {
       return NextResponse.json({ error: 'Occurrence is required' }, { status: 400 });
@@ -107,34 +89,30 @@ export async function POST(request: NextRequest) {
     // Admin → published straight away. Staff → draft awaiting admin approval.
     const status = payload.role === 'admin' ? 'published' : 'draft';
     const releasedAt = published_at || new Date().toISOString();
-    const year = new Date(releasedAt).getFullYear();
     const title = operator ? `${operator} — ${occurrence}` : occurrence;
 
-    // Retry once if two uploads race to the same auto-number.
     let saved;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const reportNo = await nextReportNo(sector, year);
-      try {
-        const rows = await query(
-          `INSERT INTO reports
-             (report_no, sector, type, report_status, operator, reg_no, vehicle_type,
-              train_name, occurrence, title, description, file_url, file_name, file_size,
-              published_at, status, uploaded_by, uploader_name)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
-           RETURNING ${REPORT_FIELDS}`,
-          [
-            reportNo, sector, type || 'final', report_status ?? null, operator ?? null,
-            reg_no ?? null, vehicle_type ?? null, train_name ?? null, occurrence, title,
-            description ?? null, file_url, file_name ?? null, file_size ?? null,
-            releasedAt, status, payload.userId, payload.email,
-          ]
-        );
-        saved = rows[0];
-        break;
-      } catch (e: unknown) {
-        if (attempt === 0 && (e as { code?: string })?.code === '23505') continue;
-        throw e;
+    try {
+      const rows = await query(
+        `INSERT INTO reports
+           (report_no, sector, type, report_status, operator, reg_no, vehicle_type,
+            train_name, occurrence, title, description, file_url, file_name, file_size,
+            published_at, status, uploaded_by, uploader_name)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+         RETURNING ${REPORT_FIELDS}`,
+        [
+          String(report_no).trim(), sector, type || 'final', report_status ?? null, operator ?? null,
+          reg_no ?? null, vehicle_type ?? null, train_name ?? null, occurrence, title,
+          description ?? null, file_url, file_name ?? null, file_size ?? null,
+          releasedAt, status, payload.userId, payload.email,
+        ]
+      );
+      saved = rows[0];
+    } catch (e: unknown) {
+      if ((e as { code?: string })?.code === '23505') {
+        return NextResponse.json({ error: 'That Report No. already exists. Please use a unique number.' }, { status: 409 });
       }
+      throw e;
     }
 
     return NextResponse.json({ report: saved }, { status: 201 });

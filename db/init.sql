@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS reports (
   type          TEXT        NOT NULL DEFAULT 'final'
                             CHECK (type IN ('preliminary', 'final', 'interim', 'safety_bulletin')),
   sector        TEXT        NOT NULL
-                            CHECK (sector IN ('aviation', 'maritime', 'railway')),
+                            CHECK (sector IN ('aviation', 'maritime', 'railway', 'other')),
   description   TEXT,
   status        TEXT        NOT NULL DEFAULT 'published'
                             CHECK (status IN ('draft', 'published', 'archived')),

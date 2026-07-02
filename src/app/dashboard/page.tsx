@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./dashboard.module.css";
 
-type Sector = "aviation" | "maritime" | "railway";
+type Sector = "aviation" | "maritime" | "railway" | "other";
 type ReportType = "preliminary" | "final" | "interim" | "safety_bulletin";
 type NewsCategory = "general" | "safety" | "aviation" | "maritime" | "railway" | "press_release" | "announcement";
 
@@ -57,6 +57,7 @@ const FIELD_LABELS: Record<Sector, { operator: string; reg: string; vtype: strin
   aviation: { operator: "Aircraft Operator", reg: "Reg No", vtype: "Aircraft Type" },
   maritime: { operator: "Operator", reg: "Vessel/Craft No", vtype: "Vessel Type" },
   railway: { operator: "Train Operator", reg: "Reg No", vtype: "Train Type" },
+  other: { operator: "Operator / Party", reg: "Reference", vtype: "Type" },
 };
 
 interface NewsItem {
@@ -99,6 +100,7 @@ const SECTORS = [
   { value: "aviation", label: "Aviation", color: "#1B2A6B", icon: "✈" },
   { value: "maritime", label: "Maritime", color: "#0077B6", icon: "⚓" },
   { value: "railway", label: "Railway", color: "#6A0572", icon: "🚆" },
+  { value: "other", label: "Other", color: "#475569", icon: "⚠" },
 ];
 
 const NEWS_CATEGORIES = [
@@ -305,6 +307,7 @@ export default function DashboardPage() {
 
   // Upload form state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadReportNo, setUploadReportNo] = useState("");
   const [uploadSector, setUploadSector] = useState<Sector>("aviation");
   const [uploadOperator, setUploadOperator] = useState("");
   const [uploadRegNo, setUploadRegNo] = useState("");
@@ -321,6 +324,58 @@ export default function DashboardPage() {
 
   // Stats
   const [stats, setStats] = useState({ total: 0, aviation: 0, maritime: 0, railway: 0 });
+
+  // Edit-report modal state (admin) — update status / date and optionally swap the file
+  const [editReport, setEditReport] = useState<Report | null>(null);
+  const [editStatus, setEditStatus] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+
+  const openEdit = (r: Report) => {
+    setEditReport(r);
+    setEditStatus(r.report_status || "");
+    setEditDate((r.published_at || r.created_at).split("T")[0]);
+    setEditFile(null);
+    setEditError("");
+    if (editFileInputRef.current) editFileInputRef.current.value = "";
+  };
+
+  const handleEditSave = async () => {
+    if (!editReport) return;
+    setEditSaving(true);
+    setEditError("");
+    try {
+      const patch: Record<string, unknown> = {
+        report_status: editStatus,
+        published_at: new Date(editDate).toISOString(),
+      };
+      if (editFile) {
+        const fd = new FormData();
+        fd.append("file", editFile);
+        const up = await fetch("/api/reports/upload", { method: "POST", body: fd });
+        const upData = await up.json();
+        if (!up.ok) throw new Error(upData.error || "File upload failed");
+        patch.file_url = upData.url;
+        patch.file_name = upData.name;
+        patch.file_size = upData.size;
+      }
+      const res = await fetch(`/api/reports/${editReport.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update report");
+      setReports(prev => prev.map(r => (r.id === editReport.id ? { ...r, ...data.report } : r)));
+      setEditReport(null);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Update failed");
+    }
+    setEditSaving(false);
+  };
 
   const fetchReports = useCallback(async () => {
     setReportsLoading(true);
@@ -537,8 +592,8 @@ export default function DashboardPage() {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadFile || !uploadOccurrence || !uploadSector) {
-      setUploadError("Please provide the occurrence, select a sector, and attach the report file.");
+    if (!uploadFile || !uploadReportNo.trim() || !uploadOccurrence || !uploadSector) {
+      setUploadError("Please provide the report no., occurrence, select a sector, and attach the report file.");
       return;
     }
 
@@ -571,6 +626,7 @@ export default function DashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          report_no: uploadReportNo.trim(),
           sector: uploadSector,
           operator: uploadOperator,
           reg_no: uploadRegNo,
@@ -598,6 +654,7 @@ export default function DashboardPage() {
           : `Report submitted for review! Report No: ${reportData.report?.report_no || "assigned"}. An admin will approve it before it appears on the website.`
       );
       setUploadFile(null);
+      setUploadReportNo("");
       setUploadOperator("");
       setUploadRegNo("");
       setUploadVehicleType("");
@@ -1182,13 +1239,10 @@ export default function DashboardPage() {
 
                 <div className={styles.formRight}>
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Report No.</label>
-                    <input
-                      className={styles.formInput}
-                      value="Auto-generated on publish"
-                      disabled
-                      style={{ color: "#94a3b8", fontStyle: "italic" }}
-                    />
+                    <label className={styles.formLabel} htmlFor="r-reportno">Report No. *</label>
+                    <input id="r-reportno" type="text" className={styles.formInput}
+                      placeholder="e.g. NSIB/AIR/2020/001"
+                      required value={uploadReportNo} onChange={e => setUploadReportNo(e.target.value)} />
                   </div>
 
                   {uploadSector === "railway" && (
@@ -1384,6 +1438,7 @@ export default function DashboardPage() {
                               <div className={styles.dateCell}>{formatDate(r.published_at || r.created_at)}</div>
                               <div className={styles.actionCell}>
                                 <a href={r.file_url} target="_blank" rel="noopener noreferrer" className={styles.viewBtn}>View</a>
+                                <button className={styles.viewBtn} onClick={() => openEdit(r)}>Edit</button>
                                 <button className={styles.deleteBtn} onClick={() => handleDelete(r.id)}>Delete</button>
                               </div>
                             </div>
@@ -2038,6 +2093,53 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Edit report modal (admin): change status/date, optionally replace the file */}
+      {editReport && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}
+          onClick={() => !editSaving && setEditReport(null)}
+        >
+          <div
+            style={{ background: "white", borderRadius: "var(--radius-lg)", padding: "1.75rem", width: "100%", maxWidth: "440px", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--nsib-navy)", marginBottom: "0.35rem" }}>Edit Report</h2>
+            <p style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "1.25rem", fontFamily: "monospace" }}>{editReport.report_no}</p>
+
+            {editError && <div className={styles.alertError} style={{ marginBottom: "1rem" }}>{editError}</div>}
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="edit-status">Status</label>
+              <select id="edit-status" className={styles.formSelect} value={editStatus} onChange={e => setEditStatus(e.target.value)}>
+                {REPORT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="edit-date">Date of Release</label>
+              <input id="edit-date" type="date" className={styles.formInput} value={editDate} onChange={e => setEditDate(e.target.value)} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel} htmlFor="edit-file">Replace File (optional)</label>
+              <input id="edit-file" ref={editFileInputRef} type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+                onChange={e => setEditFile(e.target.files?.[0] || null)} />
+              <p style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: "0.4rem" }}>
+                {editFile ? `New file: ${editFile.name}` : "Leave empty to keep the current file."}
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
+              <button type="button" className={styles.viewBtn} style={{ flex: 1 }} disabled={editSaving} onClick={() => setEditReport(null)}>Cancel</button>
+              <button type="button" className={styles.submitBtn} style={{ flex: 1, marginTop: 0 }} disabled={editSaving} onClick={handleEditSave}>
+                {editSaving ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

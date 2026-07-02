@@ -147,23 +147,6 @@ export const directorates: Directorate[] = [
     accent: "var(--nsib-navy)",
     category: "Operational",
   },
-  {
-    num: "09",
-    name: "Office of the Director General",
-    label: "Office of the Director General",
-    slug: "office-of-the-director-general",
-    desc: "The executive office providing strategic leadership, policy direction, inter-agency liaison, and direct oversight of all Bureau activities.",
-    mandate: "To provide the highest level of strategic leadership, governance, and accountability for the Bureau — ensuring the NSIB fulfils its statutory mandate with independence, integrity, and international excellence.",
-    functions: [
-      "Strategic planning, policy formulation, and governance of the Bureau.",
-      "Representation of the Bureau at national and international forums.",
-      "Inter-ministerial and inter-agency liaison and stakeholder engagement.",
-      "Oversight of all directorates and performance management of senior leadership.",
-      "Approval and sign-off of all published investigation reports and safety recommendations.",
-    ],
-    accent: "var(--nsib-red)",
-    category: "Executive",
-  },
 ];
 
 export function findDirectorateBySlug(slug: string): Directorate | null {

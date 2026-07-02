@@ -66,7 +66,7 @@ export default function DirectoratesPage() {
               marginBottom: "1.5rem",
               textShadow: '0 10px 30px rgba(0,0,0,0.3)'
             }}>
-              Nine directorates.<br />One mandate.
+              Eight directorates.<br />One mandate.
             </h1>
 
             <p style={{
@@ -110,7 +110,7 @@ export default function DirectoratesPage() {
               gap: "3rem",
             }}>
               {[
-                { value: "9", label: "Directorates" },
+                { value: "8", label: "Directorates" },
                 { value: "3", label: "Transport Modes" },
                 { value: "1", label: "Independent Mandate" },
               ].map((stat) => (

@@ -111,8 +111,38 @@ export default function TeamPage() {
       </section>
 
       <div className="container">
+        {/* Director General — featured at the top to reflect seniority */}
+        {teamMembers.length > 0 && (
+          <FadeIn>
+            <ScaleHover style={{ display: 'block', marginBottom: '3.5rem' }}>
+              <div className="glass-panel" style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: 'minmax(280px, 420px) 1fr', gap: 0 }}>
+                <div style={{ position: 'relative', minHeight: '420px', backgroundColor: 'var(--nsib-gray-100)' }}>
+                  <Image
+                    src={teamMembers[0].image}
+                    alt={teamMembers[0].name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 420px"
+                    style={{ objectFit: 'cover', objectPosition: 'top' }}
+                    priority
+                  />
+                </div>
+                <div style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <span style={{ display: 'inline-block', alignSelf: 'flex-start', padding: '0.35rem 0.9rem', backgroundColor: 'var(--nsib-red)', color: 'white', borderRadius: '30px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+                    Director General
+                  </span>
+                  <h2 className="text-navy" style={{ marginBottom: '0.5rem', fontSize: '1.8rem' }}>{teamMembers[0].name}</h2>
+                  <p className="text-red" style={{ fontWeight: 500, marginBottom: '1.5rem', fontSize: '1.05rem' }}>{teamMembers[0].title}</p>
+                  <p style={{ color: 'var(--nsib-slate-light)', lineHeight: 1.7, marginBottom: '1.75rem' }}>{teamMembers[0].bio[0]}</p>
+                  <Link href={`/team/${teamMembers[0].slug}`} className="btn btn-primary" style={{ alignSelf: 'flex-start', fontSize: '0.95rem' }}>View Full Profile</Link>
+                </div>
+              </div>
+            </ScaleHover>
+          </FadeIn>
+        )}
+
+        {/* Directors */}
         <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2.5rem' }}>
-        {teamMembers.map((member, idx) => (
+        {teamMembers.slice(1).map((member, idx) => (
           <StaggerItem key={idx}>
             <ScaleHover style={{ height: '100%' }}>
               <div className="glass-panel" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>

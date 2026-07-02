@@ -450,12 +450,9 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
                         </div>
                       )}
 
-                      <div
+                      <Link
+                        href={`/event/${ev.id}`}
                         className="cal-event-row"
-                        onClick={() => { setSelectedDay(d.getDate()); if (d.getMonth() !== viewMonth) { setViewMonth(d.getMonth()); setViewYear(d.getFullYear()); } }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { setSelectedDay(d.getDate()); if (d.getMonth() !== viewMonth) { setViewMonth(d.getMonth()); setViewYear(d.getFullYear()); } } }}
                         style={{
                           display: "flex",
                           gap: "0.85rem",
@@ -466,6 +463,7 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
                           alignItems: "flex-start",
                           transition: "background 0.15s",
                           outline: "none",
+                          textDecoration: "none",
                         }}
                       >
                         {/* Color accent bar */}
@@ -542,7 +540,7 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
                             </span>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </div>
                   );
                 })}

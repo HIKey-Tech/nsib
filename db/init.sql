@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS reports (
   file_url      TEXT        NOT NULL,
   file_name     TEXT,
   file_size     BIGINT,
+  cover_image_url TEXT,                              -- optional; UI falls back to NSIB logo
   published_at  TIMESTAMPTZ NOT NULL DEFAULT now(),  -- DATE OF RELEASE
   uploaded_by   UUID        REFERENCES users(id) ON DELETE SET NULL,
   uploader_name TEXT,

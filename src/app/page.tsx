@@ -18,6 +18,7 @@ interface Report {
   report_status?: string;
   occurrence?: string;
   file_url: string;
+  cover_image_url?: string | null;
   published_at: string;
   status: string;
 }
@@ -42,11 +43,7 @@ interface Event {
   category: string;
 }
 
-const SECTOR_IMAGES: Record<string, string> = {
-  aviation: "/images/air.jpg",
-  maritime: "/images/new_maritime.jpg",
-  railway: "/images/trainstation.jpg",
-};
+const NSIB_LOGO = "/images/nsib-logo.png";
 
 const TYPE_LABEL: Record<string, string> = {
   preliminary: "Preliminary",
@@ -223,7 +220,8 @@ export default function Home() {
     title: r.occurrence || r.title,
     date: formatDate(r.published_at),
     status: r.report_status || TYPE_LABEL[r.type] || r.type,
-    image: SECTOR_IMAGES[r.sector] || SECTOR_IMAGES.aviation,
+    image: r.cover_image_url || NSIB_LOGO,
+    hasCover: !!r.cover_image_url,
     sector: r.sector,
     href: r.file_url,
     isDynamic: true,
@@ -657,7 +655,7 @@ export default function Home() {
             {displayReports.slice(0, 3).map((item, index) => (
               <ScrollReveal direction="up" delay={0.2 + index * 0.15} distance={40} key={index} className={styles.investigationCard}>
                 <div className={styles.invImageWrapper}>
-                  <Image src={item.image} alt={item.title} fill className={styles.invImage} sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                  <Image src={item.image} alt={item.title} fill className={styles.invImage} style={item.hasCover ? undefined : { objectFit: "contain", padding: "2rem" }} sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
                 </div>
                 <div className={styles.invCardBody}>
                   <div className={styles.cardHeader}>

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const REPORT_FIELDS = `id, report_no, sector, type, report_status, operator, reg_no,
   vehicle_type, train_name, occurrence, title, description,
-  file_url, file_name, file_size, published_at, created_at, status, uploader_name`;
+  file_url, file_name, file_size, cover_image_url, published_at, created_at, status, uploader_name`;
 
 const VALID_SECTORS = new Set(['aviation', 'maritime', 'railway', 'other']);
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       report_no, sector, operator, reg_no, vehicle_type, train_name, occurrence,
-      report_status, description, file_url, file_name, file_size, published_at, type,
+      report_status, description, file_url, file_name, file_size, cover_image_url, published_at, type,
     } = body;
 
     if (!sector || !VALID_SECTORS.has(sector)) {
@@ -97,14 +97,14 @@ export async function POST(request: NextRequest) {
         `INSERT INTO reports
            (report_no, sector, type, report_status, operator, reg_no, vehicle_type,
             train_name, occurrence, title, description, file_url, file_name, file_size,
-            published_at, status, uploaded_by, uploader_name)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+            cover_image_url, published_at, status, uploaded_by, uploader_name)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
          RETURNING ${REPORT_FIELDS}`,
         [
           String(report_no).trim(), sector, type || 'final', report_status ?? null, operator ?? null,
           reg_no ?? null, vehicle_type ?? null, train_name ?? null, occurrence, title,
           description ?? null, file_url, file_name ?? null, file_size ?? null,
-          releasedAt, status, payload.userId, payload.email,
+          cover_image_url ?? null, releasedAt, status, payload.userId, payload.email,
         ]
       );
       saved = rows[0];

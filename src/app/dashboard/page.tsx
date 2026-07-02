@@ -307,6 +307,8 @@ export default function DashboardPage() {
 
   // Upload form state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadCover, setUploadCover] = useState<File | null>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [uploadReportNo, setUploadReportNo] = useState("");
   const [uploadSector, setUploadSector] = useState<Sector>("aviation");
   const [uploadOperator, setUploadOperator] = useState("");
@@ -626,6 +628,17 @@ export default function DashboardPage() {
         throw new Error(uploadData.error || "File upload failed");
       }
 
+      // Optional cover photo — reuse the same upload endpoint (accepts images).
+      let coverUrl: string | null = null;
+      if (uploadCover) {
+        const coverForm = new FormData();
+        coverForm.append("file", uploadCover);
+        const coverRes = await fetch("/api/reports/upload", { method: "POST", body: coverForm });
+        const coverData = await coverRes.json();
+        if (!coverRes.ok) throw new Error(coverData.error || "Cover image upload failed");
+        coverUrl = coverData.url;
+      }
+
       // Step 2: Save report metadata
       setUploadProgress(80);
       const reportRes = await fetch("/api/reports", {
@@ -643,6 +656,7 @@ export default function DashboardPage() {
           file_url: uploadData.url,
           file_name: uploadData.name,
           file_size: uploadData.size,
+          cover_image_url: coverUrl,
           published_at: new Date(uploadDate).toISOString(),
         }),
       });
@@ -660,6 +674,8 @@ export default function DashboardPage() {
           : `Report submitted for review! Report No: ${reportData.report?.report_no || "assigned"}. An admin will approve it before it appears on the website.`
       );
       setUploadFile(null);
+      setUploadCover(null);
+      if (coverInputRef.current) coverInputRef.current.value = "";
       setUploadReportNo("");
       setUploadOperator("");
       setUploadRegNo("");
@@ -1219,6 +1235,22 @@ export default function DashboardPage() {
                         <p className={styles.dropFormats}>PDF, Word, Excel, Images · Max 50MB</p>
                       </div>
                     )}
+                  </div>
+
+                  {/* Cover Photo (optional) */}
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel} htmlFor="r-cover">Cover Photo (optional)</label>
+                    <input
+                      id="r-cover"
+                      ref={coverInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className={styles.formInput}
+                      onChange={e => setUploadCover(e.target.files?.[0] || null)}
+                    />
+                    <p className={styles.dropFormats} style={{ marginTop: "0.4rem" }}>
+                      {uploadCover ? `Selected: ${uploadCover.name}` : "Leave empty to use the NSIB logo. JPG, PNG or WebP."}
+                    </p>
                   </div>
 
                   {/* Sector Selection */}

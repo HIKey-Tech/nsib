@@ -119,10 +119,51 @@ function formatBytes(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
+// PUT a file to a signed URL, reporting bytes sent. fetch() can't report upload
+// progress, so we use XHR for the one request that's actually slow on a thin uplink.
+function putWithProgress(url: string, file: File, onProgress: (loaded: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("content-type", file.type);
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded); };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error(`Upload failed (${xhr.status})`));
+    xhr.onerror = () => reject(new Error("Upload failed (network error)"));
+    xhr.send(file);
+  });
+}
+
+// Downscale + re-encode raster images so covers don't hog a slow uplink.
+// Returns the original untouched for non-images or when it wouldn't help.
+async function compressImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const MAX = 1600;
+    const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, "image/webp", 0.82));
+    if (!blob || blob.size >= file.size) return file; // no win — keep original
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" });
+  } catch {
+    return file; // decoding failed — upload as-is
+  }
+}
+
 // Upload a file and return its public URL. Prefers a direct-to-storage signed URL
 // (bypasses Vercel's 4.5MB function-body limit); falls back to a normal POST on
 // local-disk dev. `subdir` is "reports" or "covers".
-async function uploadFileToStorage(file: File, subdir: string): Promise<string> {
+async function uploadFileToStorage(file: File, subdir: string, onProgress: (loaded: number) => void): Promise<string> {
   const initRes = await fetch("/api/reports/upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -132,12 +173,7 @@ async function uploadFileToStorage(file: File, subdir: string): Promise<string> 
   if (!initRes.ok) throw new Error(init.error || "Could not start upload");
 
   if (init.signed) {
-    const put = await fetch(init.uploadUrl, {
-      method: "PUT",
-      headers: { "content-type": file.type },
-      body: file,
-    });
-    if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+    await putWithProgress(init.uploadUrl, file, onProgress);
     return init.publicUrl;
   }
 
@@ -147,6 +183,7 @@ async function uploadFileToStorage(file: File, subdir: string): Promise<string> 
   const res = await fetch("/api/reports/upload", { method: "POST", body: form });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "File upload failed");
+  onProgress(file.size);
   return data.url;
 }
 
@@ -639,18 +676,25 @@ export default function DashboardPage() {
     setUploading(true);
     setUploadError("");
     setUploadSuccess("");
-    setUploadProgress(10);
+    setUploadProgress(5);
 
     try {
-      // Step 1: Upload file(s) directly to storage.
-      setUploadProgress(30);
-      const fileUrl = await uploadFileToStorage(uploadFile, "reports");
+      // Step 1: Upload file + optional cover in parallel, direct to storage.
+      // Shrink the cover first so it barely touches the uplink.
+      const cover = uploadCover ? await compressImage(uploadCover) : null;
+      const totalBytes = uploadFile.size + (cover?.size || 0);
+      const loaded = { file: 0, cover: 0 };
+      // Reserve 5–90% of the bar for the actual byte transfer.
+      const bump = () =>
+        setUploadProgress(Math.min(90, 5 + Math.round(((loaded.file + loaded.cover) / totalBytes) * 85)));
 
-      setUploadProgress(60);
-      const coverUrl = uploadCover ? await uploadFileToStorage(uploadCover, "covers") : null;
+      const [fileUrl, coverUrl] = await Promise.all([
+        uploadFileToStorage(uploadFile, "reports", l => { loaded.file = l; bump(); }),
+        cover ? uploadFileToStorage(cover, "covers", l => { loaded.cover = l; bump(); }) : Promise.resolve(null),
+      ]);
+      setUploadProgress(92);
 
       // Step 2: Save report metadata
-      setUploadProgress(80);
       const reportRes = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

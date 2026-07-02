@@ -23,6 +23,11 @@ export async function saveUpload(subdir: string, file: File): Promise<StoredFile
   return { url: `/uploads/${subdir}/${filename}`, name: file.name, size: file.size, type: file.type };
 }
 
+/** Local disk can't issue signed upload URLs — callers fall back to a normal POST. */
+export async function createSignedUploadUrl(): Promise<null> {
+  return null;
+}
+
 /** Delete a file previously saved via saveUpload. No-ops for non-local/foreign URLs. */
 export async function deleteUpload(url: string | null | undefined): Promise<void> {
   if (!url || !url.startsWith('/uploads/')) return;

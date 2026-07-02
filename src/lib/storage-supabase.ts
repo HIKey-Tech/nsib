@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { StoredFile } from './storage';
+import type { StoredFile, SignedUploadTarget } from './storage';
 
 // Supabase Storage backend (demo / staging use).
 // Uploads go to a public Supabase Storage bucket called "uploads".
@@ -27,12 +27,16 @@ function getClient(): SupabaseClient {
 
 const BUCKET = 'uploads';
 
+/** Build the sanitised, collision-free storage path for an upload. */
+function buildStoragePath(subdir: string, name: string): string {
+  let sanitized = name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  if (DANGEROUS_EXT.test(sanitized)) sanitized = sanitized.replace(DANGEROUS_EXT, '.txt');
+  return `${subdir}/${Date.now()}_${sanitized}`;
+}
+
 /** Save an uploaded File to Supabase Storage and return its public URL. */
 export async function saveUpload(subdir: string, file: File): Promise<StoredFile> {
-  let sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  if (DANGEROUS_EXT.test(sanitized)) sanitized = sanitized.replace(DANGEROUS_EXT, '.txt');
-  const filename = `${Date.now()}_${sanitized}`;
-  const storagePath = `${subdir}/${filename}`;
+  const storagePath = buildStoragePath(subdir, file.name);
 
   const client = getClient();
 
@@ -51,6 +55,26 @@ export async function saveUpload(subdir: string, file: File): Promise<StoredFile
   const { data } = client.storage.from(BUCKET).getPublicUrl(storagePath);
 
   return { url: data.publicUrl, name: file.name, size: file.size, type: file.type };
+}
+
+/**
+ * Issue a signed URL the browser can PUT a file to directly, so large uploads
+ * never pass through our serverless function (Vercel caps those at 4.5MB).
+ */
+export async function createSignedUploadUrl(subdir: string, filename: string): Promise<SignedUploadTarget> {
+  const storagePath = buildStoragePath(subdir, filename);
+  const client = getClient();
+
+  const { data, error } = await client.storage.from(BUCKET).createSignedUploadUrl(storagePath);
+  if (error || !data) {
+    throw new Error(`Could not create signed upload URL: ${error?.message ?? 'unknown error'}`);
+  }
+
+  // data.signedUrl may be relative to the storage endpoint — resolve to absolute.
+  const uploadUrl = new URL(data.signedUrl, process.env.SUPABASE_URL).toString();
+  const { data: pub } = client.storage.from(BUCKET).getPublicUrl(storagePath);
+
+  return { uploadUrl, publicUrl: pub.publicUrl };
 }
 
 /** Delete a file previously uploaded to Supabase Storage. */

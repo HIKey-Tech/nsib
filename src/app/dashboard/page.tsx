@@ -119,6 +119,37 @@ function formatBytes(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
+// Upload a file and return its public URL. Prefers a direct-to-storage signed URL
+// (bypasses Vercel's 4.5MB function-body limit); falls back to a normal POST on
+// local-disk dev. `subdir` is "reports" or "covers".
+async function uploadFileToStorage(file: File, subdir: string): Promise<string> {
+  const initRes = await fetch("/api/reports/upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, contentType: file.type, subdir }),
+  });
+  const init = await initRes.json();
+  if (!initRes.ok) throw new Error(init.error || "Could not start upload");
+
+  if (init.signed) {
+    const put = await fetch(init.uploadUrl, {
+      method: "PUT",
+      headers: { "content-type": file.type },
+      body: file,
+    });
+    if (!put.ok) throw new Error(`Upload failed (${put.status})`);
+    return init.publicUrl;
+  }
+
+  // Local-disk fallback — small dev files go through the function.
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/reports/upload", { method: "POST", body: form });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "File upload failed");
+  return data.url;
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-NG", {
     year: "numeric",
@@ -611,33 +642,12 @@ export default function DashboardPage() {
     setUploadProgress(10);
 
     try {
-      // Step 1: Upload file to storage
-      const formData = new FormData();
-      formData.append("file", uploadFile);
-
+      // Step 1: Upload file(s) directly to storage.
       setUploadProgress(30);
-      const uploadRes = await fetch("/api/reports/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const fileUrl = await uploadFileToStorage(uploadFile, "reports");
 
       setUploadProgress(60);
-      const uploadData = await uploadRes.json();
-
-      if (!uploadRes.ok) {
-        throw new Error(uploadData.error || "File upload failed");
-      }
-
-      // Optional cover photo — reuse the same upload endpoint (accepts images).
-      let coverUrl: string | null = null;
-      if (uploadCover) {
-        const coverForm = new FormData();
-        coverForm.append("file", uploadCover);
-        const coverRes = await fetch("/api/reports/upload", { method: "POST", body: coverForm });
-        const coverData = await coverRes.json();
-        if (!coverRes.ok) throw new Error(coverData.error || "Cover image upload failed");
-        coverUrl = coverData.url;
-      }
+      const coverUrl = uploadCover ? await uploadFileToStorage(uploadCover, "covers") : null;
 
       // Step 2: Save report metadata
       setUploadProgress(80);
@@ -653,9 +663,9 @@ export default function DashboardPage() {
           train_name: uploadSector === "railway" ? uploadTrainName : null,
           occurrence: uploadOccurrence,
           report_status: uploadStatus,
-          file_url: uploadData.url,
-          file_name: uploadData.name,
-          file_size: uploadData.size,
+          file_url: fileUrl,
+          file_name: uploadFile.name,
+          file_size: uploadFile.size,
           cover_image_url: coverUrl,
           published_at: new Date(uploadDate).toISOString(),
         }),

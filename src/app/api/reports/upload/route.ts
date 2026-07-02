@@ -37,12 +37,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File type not allowed. Please upload PDF, Word, Excel, or image files.' }, { status: 400 });
     }
 
-    // Max 50MB
-    const MAX_SIZE = 50 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 50MB.' }, { status: 400 });
-    }
-
+    // No size cap: this route only serves local-disk uploads. The Supabase path
+    // uploads directly via signed URL and is bounded by the bucket's own limit.
     const saved = await saveUpload('reports', file);
 
     return NextResponse.json({

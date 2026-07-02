@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
+import TrainingsList from "./TrainingsList";
 
 import { Metadata } from "next";
 
@@ -72,26 +73,7 @@ export default function LearningPortal() {
 
       <section className={styles.contentSection}>
         <div className="container">
-          <div className={styles.coursesGrid}>
-            <div className={styles.courseCard}>
-              <div className={styles.courseIcon}>✈️</div>
-              <h3>Aviation Safety Course</h3>
-              <p>Learn the fundamentals of aviation accident investigation and proactive safety measures.</p>
-              <Link href="https://www.sparktool.africa/nigerian-safety-investigation-bureau/" target="_blank" rel="noopener noreferrer" className={`btn btn-primary ${styles.actionBtn}`}>Enroll Now</Link>
-            </div>
-            <div className={styles.courseCard}>
-              <div className={styles.courseIcon}>🚢</div>
-              <h3>Maritime Incident Analysis</h3>
-              <p>Deep dive into marine casualties, safety reporting, and investigation methodologies.</p>
-              <Link href="https://www.sparktool.africa/nigerian-safety-investigation-bureau/" target="_blank" rel="noopener noreferrer" className={`btn btn-primary ${styles.actionBtn}`}>Enroll Now</Link>
-            </div>
-            <div className={styles.courseCard}>
-              <div className={styles.courseIcon}>🚆</div>
-              <h3>Railway Safety Standards</h3>
-              <p>Understand the critical frameworks and standards for a safe national rail network.</p>
-              <Link href="https://www.sparktool.africa/nigerian-safety-investigation-bureau/" target="_blank" rel="noopener noreferrer" className={`btn btn-primary ${styles.actionBtn}`}>Enroll Now</Link>
-            </div>
-          </div>
+          <TrainingsList />
 
           <div className={styles.comingSoon}>
             <h2>More courses are coming soon!</h2>

@@ -249,7 +249,7 @@ export default function DashboardPage() {
   const [reportsPage, setReportsPage] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
   const [pubsPage, setPubsPage] = useState(1);
-  const [activeSection, setActiveSection] = useState<"overview" | "analytics" | "upload" | "reports" | "news" | "manage-news" | "events" | "publications" | "users">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "analytics" | "upload" | "reports" | "news" | "manage-news" | "events" | "publications" | "trainings" | "users">("overview");
 
   // Users management (admin only)
   const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -315,6 +315,25 @@ export default function DashboardPage() {
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventError, setEventError] = useState("");
   const [eventSuccess, setEventSuccess] = useState("");
+
+  // Trainings (Learning Portal)
+  type Training = { id: string; title: string; description: string; venue: string; category: string; start_date: string; end_date: string | null; reg_count: string };
+  type Registration = { id: string; full_name: string; email: string; phone: string | null; organization: string | null; location: string | null; notes: string | null; created_at: string };
+  const [trainings, setTrainings] = useState<Training[]>([]);
+  const [trainingsFetched, setTrainingsFetched] = useState(false);
+  const [trainingsLoading, setTrainingsLoading] = useState(false);
+  const [trTitle, setTrTitle] = useState("");
+  const [trDescription, setTrDescription] = useState("");
+  const [trVenue, setTrVenue] = useState("");
+  const [trCategory, setTrCategory] = useState("general");
+  const [trStart, setTrStart] = useState("");
+  const [trEnd, setTrEnd] = useState("");
+  const [trSubmitting, setTrSubmitting] = useState(false);
+  const [trError, setTrError] = useState("");
+  const [trSuccess, setTrSuccess] = useState("");
+  const [openRegId, setOpenRegId] = useState<string | null>(null);
+  const [regs, setRegs] = useState<Registration[]>([]);
+  const [regsLoading, setRegsLoading] = useState(false);
 
   const handleEventFlyerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -555,6 +574,75 @@ export default function DashboardPage() {
     else alert("Delete failed");
   };
 
+  const fetchTrainings = useCallback(async () => {
+    setTrainingsLoading(true);
+    try {
+      const res = await fetch("/api/trainings?limit=200");
+      const data = await res.json();
+      if (data.trainings) setTrainings(data.trainings);
+    } catch (e) {
+      console.error("Failed to fetch trainings", e);
+    }
+    setTrainingsLoading(false);
+    setTrainingsFetched(true);
+  }, []);
+
+  const handleTrainingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trTitle || !trStart) {
+      setTrError("Title and start date are required.");
+      return;
+    }
+    setTrSubmitting(true);
+    setTrError("");
+    setTrSuccess("");
+    try {
+      const res = await fetch("/api/trainings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: trTitle,
+          description: trDescription,
+          venue: trVenue,
+          category: trCategory,
+          start_date: new Date(trStart).toISOString(),
+          end_date: trEnd ? new Date(trEnd).toISOString() : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create training");
+      setTrSuccess("Training published successfully!");
+      setTrTitle(""); setTrDescription(""); setTrVenue(""); setTrCategory("general"); setTrStart(""); setTrEnd("");
+      fetchTrainings();
+      setTimeout(() => setTrSuccess(""), 3000);
+    } catch (err) {
+      setTrError(err instanceof Error ? err.message : "Submission failed");
+    }
+    setTrSubmitting(false);
+  };
+
+  const handleDeleteTraining = async (id: string) => {
+    if (!confirm("Delete this training and all its registrations? This cannot be undone.")) return;
+    const res = await fetch(`/api/trainings?id=${id}`, { method: "DELETE" });
+    if (res.ok) { if (openRegId === id) setOpenRegId(null); fetchTrainings(); }
+    else alert("Delete failed");
+  };
+
+  const toggleRegistrations = async (id: string) => {
+    if (openRegId === id) { setOpenRegId(null); return; }
+    setOpenRegId(id);
+    setRegsLoading(true);
+    setRegs([]);
+    try {
+      const res = await fetch(`/api/trainings/registrations?training_id=${id}`);
+      const data = await res.json();
+      if (data.registrations) setRegs(data.registrations);
+    } catch (e) {
+      console.error("Failed to fetch registrations", e);
+    }
+    setRegsLoading(false);
+  };
+
   useEffect(() => {
     // Check auth
     fetch("/api/auth/me")
@@ -581,6 +669,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (activeSection === "publications" && !pubsFetched && !pubsLoading) fetchPubs();
   }, [activeSection, pubsFetched, pubsLoading, fetchPubs]);
+
+  // Load trainings when that tab is opened (only once).
+  useEffect(() => {
+    if (activeSection === "trainings" && !trainingsFetched && !trainingsLoading) fetchTrainings();
+  }, [activeSection, trainingsFetched, trainingsLoading, fetchTrainings]);
 
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -947,6 +1040,17 @@ export default function DashboardPage() {
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
             Create Event
+          </button>
+          )}
+          {user?.role === "admin" && (
+          <button
+            className={`${styles.navItem} ${activeSection === "trainings" ? styles.navItemActive : ""}`}
+            onClick={() => setActiveSection("trainings")}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+            Trainings
           </button>
           )}
           <button
@@ -1921,6 +2025,134 @@ export default function DashboardPage() {
                 {eventSubmitting ? (eventFlyerUploading ? "Uploading flyer…" : "Publishing…") : "Publish Event"}
               </button>
             </form>
+          </div>
+        )}
+
+        {activeSection === "trainings" && user?.role === "admin" && (
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h1 className={styles.pageTitle}>Trainings</h1>
+              <p className={styles.pageDesc}>Create trainings for the Learning Portal and view who has registered.</p>
+            </div>
+
+            {trSuccess && (
+              <div className={styles.successBanner}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {trSuccess}
+              </div>
+            )}
+            {trError && <div className={styles.errorBanner}>{trError}</div>}
+
+            <form onSubmit={handleTrainingSubmit} className={styles.newsForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Training Title *</label>
+                <input type="text" className={styles.input} value={trTitle} onChange={e => setTrTitle(e.target.value)} placeholder="e.g. Aviation Safety Course" required />
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Start Date & Time *</label>
+                  <input type="datetime-local" className={styles.input} value={trStart} onChange={e => setTrStart(e.target.value)} required />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>End Date & Time (optional)</label>
+                  <input type="datetime-local" className={styles.input} value={trEnd} onChange={e => setTrEnd(e.target.value)} />
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Venue</label>
+                  <input type="text" className={styles.input} value={trVenue} onChange={e => setTrVenue(e.target.value)} placeholder="e.g. NSIB Headquarters, Abuja" />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Category</label>
+                  <select className={styles.select} value={trCategory} onChange={e => setTrCategory(e.target.value)}>
+                    {[["general","General"],["aviation","Aviation"],["maritime","Maritime"],["railway","Railway"]].map(([v,l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Description</label>
+                <textarea className={styles.textarea} value={trDescription} onChange={e => setTrDescription(e.target.value)} rows={4} placeholder="Describe the training, syllabus, and audience..." />
+              </div>
+
+              <button type="submit" className={styles.submitBtn} disabled={trSubmitting}>
+                {trSubmitting ? "Publishing…" : "Publish Training"}
+              </button>
+            </form>
+
+            <div style={{ marginTop: "2rem" }}>
+              <h2 className={styles.sectionTitle}>Published Trainings</h2>
+              {trainingsLoading ? (
+                <div className={styles.loadingInner}><div className={styles.loadingSpinner}></div><p>Loading…</p></div>
+              ) : trainings.length === 0 ? (
+                <p style={{ color: "#94a3b8", padding: "1rem 0" }}>No trainings created yet.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {trainings.map(t => (
+                    <div key={t.id} style={{ border: "1px solid #e5e8ef", borderRadius: "10px", padding: "1rem 1.2rem", background: "white" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ fontWeight: 700, color: "var(--nsib-navy)" }}>{t.title}</div>
+                          <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.2rem" }}>
+                            {formatDate(t.start_date)}{t.venue ? ` · ${t.venue}` : ""} · {t.category}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button className={styles.viewBtn} onClick={() => toggleRegistrations(t.id)}>
+                            {openRegId === t.id ? "Hide" : "Registrations"} ({t.reg_count})
+                          </button>
+                          <button className={styles.deleteBtn} onClick={() => handleDeleteTraining(t.id)}>Delete</button>
+                        </div>
+                      </div>
+
+                      {openRegId === t.id && (
+                        <div style={{ marginTop: "1rem", borderTop: "1px solid #eef0f5", paddingTop: "1rem" }}>
+                          {regsLoading ? (
+                            <p style={{ color: "#94a3b8" }}>Loading registrations…</p>
+                          ) : regs.length === 0 ? (
+                            <p style={{ color: "#94a3b8" }}>No one has registered yet.</p>
+                          ) : (
+                            <div style={{ overflowX: "auto" }}>
+                              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+                                <thead>
+                                  <tr style={{ textAlign: "left", color: "#64748b" }}>
+                                    <th style={{ padding: "0.4rem 0.6rem" }}>Name</th>
+                                    <th style={{ padding: "0.4rem 0.6rem" }}>Email</th>
+                                    <th style={{ padding: "0.4rem 0.6rem" }}>Phone</th>
+                                    <th style={{ padding: "0.4rem 0.6rem" }}>Organization</th>
+                                    <th style={{ padding: "0.4rem 0.6rem" }}>Location</th>
+                                    <th style={{ padding: "0.4rem 0.6rem" }}>Notes</th>
+                                    <th style={{ padding: "0.4rem 0.6rem" }}>Registered</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {regs.map(r => (
+                                    <tr key={r.id} style={{ borderTop: "1px solid #eef0f5" }}>
+                                      <td style={{ padding: "0.4rem 0.6rem", fontWeight: 600 }}>{r.full_name}</td>
+                                      <td style={{ padding: "0.4rem 0.6rem" }}>{r.email}</td>
+                                      <td style={{ padding: "0.4rem 0.6rem" }}>{r.phone || "—"}</td>
+                                      <td style={{ padding: "0.4rem 0.6rem" }}>{r.organization || "—"}</td>
+                                      <td style={{ padding: "0.4rem 0.6rem" }}>{r.location || "—"}</td>
+                                      <td style={{ padding: "0.4rem 0.6rem" }}>{r.notes || "—"}</td>
+                                      <td style={{ padding: "0.4rem 0.6rem", whiteSpace: "nowrap" }}>{formatDate(r.created_at)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

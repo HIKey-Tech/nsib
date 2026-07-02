@@ -112,6 +112,38 @@ CREATE TABLE IF NOT EXISTS publications (
 CREATE INDEX IF NOT EXISTS publications_category_idx     ON publications (category);
 CREATE INDEX IF NOT EXISTS publications_published_at_idx ON publications (published_at DESC);
 
+-- Trainings — admin-created courses/trainings shown on the Learning Portal
+CREATE TABLE IF NOT EXISTS trainings (
+  id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  title          TEXT        NOT NULL,
+  description    TEXT,
+  venue          TEXT,
+  category       TEXT        NOT NULL DEFAULT 'general'
+                             CHECK (category IN ('aviation', 'maritime', 'railway', 'general')),
+  start_date     TIMESTAMPTZ NOT NULL,
+  end_date       TIMESTAMPTZ,
+  status         TEXT        NOT NULL DEFAULT 'published',
+  created_by     UUID        REFERENCES users(id) ON DELETE SET NULL,
+  organizer_name TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS trainings_start_idx ON trainings (start_date);
+
+-- Training registrations — public enrolments; admin views the roster
+CREATE TABLE IF NOT EXISTS training_registrations (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  training_id  UUID        NOT NULL REFERENCES trainings(id) ON DELETE CASCADE,
+  full_name    TEXT        NOT NULL,
+  email        TEXT        NOT NULL,
+  phone        TEXT,
+  organization TEXT,
+  location     TEXT,
+  notes        TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS training_regs_training_idx ON training_registrations (training_id);
+
 -- Analytics — one row per tracked event (page view, news view, report download)
 CREATE TABLE IF NOT EXISTS analytics_events (
   id         BIGSERIAL   PRIMARY KEY,
@@ -140,3 +172,4 @@ CREATE OR REPLACE TRIGGER reports_updated_at BEFORE UPDATE ON reports FOR EACH R
 CREATE OR REPLACE TRIGGER news_updated_at    BEFORE UPDATE ON news    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER events_updated_at  BEFORE UPDATE ON events  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER publications_updated_at BEFORE UPDATE ON publications FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE OR REPLACE TRIGGER trainings_updated_at BEFORE UPDATE ON trainings FOR EACH ROW EXECUTE FUNCTION set_updated_at();

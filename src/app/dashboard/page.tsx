@@ -598,7 +598,7 @@ export default function DashboardPage() {
       !uploadSector && "a transport sector",
       !uploadFile && "the report file",
     ].filter(Boolean);
-    if (missing.length) {
+    if (missing.length || !uploadFile) {
       setUploadError(`Please provide ${missing.join(", ")}.`);
       return;
     }

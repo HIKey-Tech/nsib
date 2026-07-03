@@ -107,8 +107,12 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
         .cal-scroll::-webkit-scrollbar { width: 4px; }
         .cal-scroll::-webkit-scrollbar-track { background: transparent; }
         .cal-scroll::-webkit-scrollbar-thumb { background: var(--nsib-gray-200); border-radius: 4px; }
+        /* min-width:0 lets the panels shrink below their content's natural width —
+           without it the calendar grid blows out of the viewport on phones */
+        .cal-two-col > div { min-width: 0; max-width: 100%; }
         @media (max-width: 900px) {
-          .cal-two-col { grid-template-columns: 1fr !important; }
+          .cal-two-col { grid-template-columns: minmax(0, 1fr) !important; }
+          .cal-day-label { display: none !important; }
         }
       `}</style>
 
@@ -129,7 +133,7 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
         {/* ── Two-column layout ── */}
         <div className="cal-two-col" style={{
           display: "grid",
-          gridTemplateColumns: "1fr 380px",
+          gridTemplateColumns: "minmax(0, 1fr) 380px",
           gap: "2rem",
           alignItems: "start",
         }}>
@@ -285,7 +289,7 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
 
                       {/* Event count badge for multi-event days */}
                       {hasEvents && dayEvents.length > 1 && (
-                        <span style={{
+                        <span className="cal-day-label" style={{
                           marginTop: "3px",
                           fontSize: "0.58rem",
                           fontWeight: 700,

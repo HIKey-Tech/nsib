@@ -244,6 +244,10 @@
     transform: translateY(0);
     opacity: 1;
     visibility: visible;
+    /* Panel can grow taller than the screen (expanded submenus) — make it scroll */
+    max-height: calc(100dvh - var(--nav-height));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .navItem {

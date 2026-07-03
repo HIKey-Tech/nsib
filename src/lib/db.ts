@@ -9,6 +9,9 @@ export const pool =
 
 if (process.env.NODE_ENV !== 'production') globalForPg.pgPool = pool;
 
+// Without this, an error on an idle client (e.g. DB restart) crashes the whole process.
+pool.on('error', (err) => console.error('Unexpected pg pool error:', err));
+
 // Thin helper — returns rows directly. Always use $1, $2… params (never string-interpolate input).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function query<T = any>(text: string, params?: unknown[]): Promise<T[]> {

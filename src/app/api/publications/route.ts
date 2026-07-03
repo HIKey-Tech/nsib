@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyToken, getTokenFromCookie } from '@/lib/auth';
+import { clampInt } from '@/lib/params';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,8 @@ const FIELDS = `id, title, category, reference_no, description, status,
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const page = clampInt(searchParams.get('page'), 1, 100_000);
+  const limit = clampInt(searchParams.get('limit'), 20, 100);
   const offset = (page - 1) * limit;
 
   const where: string[] = [];

@@ -30,8 +30,15 @@ function getBackend() {
   return local;
 }
 
+// Hard ceiling on server-relayed uploads. Files above this buffer into memory in
+// full, so an unbounded body is a trivial memory-exhaustion vector.
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100MB
+
 /** Save an uploaded File and return its public URL. */
 export async function saveUpload(subdir: string, file: File): Promise<StoredFile> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(`File too large — the limit is ${MAX_UPLOAD_BYTES / 1024 / 1024}MB.`);
+  }
   return getBackend().saveUpload(subdir, file);
 }
 

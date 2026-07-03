@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { signPreAuthToken, PRE_COOKIE, preCookieOptions } from '@/lib/auth';
 import { verifyPassword } from '@/lib/password';
+import { rateLimit, clientIp } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  // Brute-force guard: 10 attempts per 15 minutes per IP.
+  if (!rateLimit(`login:${clientIp(request)}`, 10, 15 * 60_000)) {
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
+  }
+
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const email = typeof body.email === 'string' ? body.email.toLowerCase().trim() : '';
+    const password = body.password;
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });

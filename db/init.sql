@@ -167,6 +167,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- =============================================================
+-- Upgrade section — brings databases created from an older version
+-- of this file up to date. Every statement is idempotent, so this
+-- whole file is safe to (re-)run against fresh AND existing DBs:
+--   docker compose exec -T db psql -U nsib -d nsib < db/init.sql
+-- =============================================================
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS cover_image_url TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS report_no       TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS operator        TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS reg_no          TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS vehicle_type    TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS train_name      TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS occurrence      TEXT;
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS report_status   TEXT;
+
+-- Allow the "other" accident sector (older DBs have a 3-sector CHECK).
+ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_sector_check;
+ALTER TABLE reports ADD  CONSTRAINT reports_sector_check
+  CHECK (sector IN ('aviation', 'maritime', 'railway', 'other'));
+
 CREATE OR REPLACE TRIGGER users_updated_at   BEFORE UPDATE ON users   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER reports_updated_at BEFORE UPDATE ON reports FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER news_updated_at    BEFORE UPDATE ON news    FOR EACH ROW EXECUTE FUNCTION set_updated_at();

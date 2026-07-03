@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
+
+const MAX_LEN = 500;
 
 // POST — public: a visitor enrols in a training
 export async function POST(request: Request) {
+  // Public write endpoint — throttle to stop scripted spam filling the table.
+  if (!rateLimit(`train-reg:${clientIp(request)}`, 5, 60 * 60_000)) {
+    return NextResponse.json({ error: "Too many registrations. Try again later." }, { status: 429 });
+  }
+
   const { training_id, full_name, email, phone, organization, location, notes } =
     await request.json();
 
@@ -11,6 +19,14 @@ export async function POST(request: Request) {
       { error: "Training, name and email are required" },
       { status: 400 }
     );
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email)) || String(email).length > 254) {
+    return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
+  }
+  for (const v of [full_name, phone, organization, location, notes]) {
+    if (v != null && String(v).length > MAX_LEN) {
+      return NextResponse.json({ error: "One of the fields is too long" }, { status: 400 });
+    }
   }
 
   try {

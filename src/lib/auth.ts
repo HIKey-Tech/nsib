@@ -1,7 +1,12 @@
 import { SignJWT, jwtVerify } from 'jose';
 
+// Refuse to boot in production without a real secret — a known fallback would let
+// anyone forge admin sessions.
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET must be set in production');
+}
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'nsib-super-secret-key-change-in-production-32-chars'
+  process.env.JWT_SECRET || 'nsib-dev-only-secret-not-for-production'
 );
 
 export const SESSION_COOKIE = 'nsib_token';

@@ -5,9 +5,15 @@ import {
   PRE_COOKIE, SESSION_COOKIE, sessionCookieOptions,
 } from '@/lib/auth';
 import { verifyTotp, hashBackupCode } from '@/lib/totp';
+import { rateLimit, clientIp } from '@/lib/rate-limit';
 
 // POST /api/auth/2fa/verify — second-factor check at login. Accepts a TOTP code or a backup code.
 export async function POST(request: NextRequest) {
+  // A 6-digit TOTP is guessable if unthrottled — 10 attempts per 15 minutes per IP.
+  if (!rateLimit(`2fa:${clientIp(request)}`, 10, 15 * 60_000)) {
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
+  }
+
   const token = getCookie(request.headers.get('cookie'), PRE_COOKIE);
   const payload = token ? await verifyPreAuthToken(token) : null;
   if (!payload) {

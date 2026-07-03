@@ -1,8 +1,9 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { cache } from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import { query } from "@/lib/db";
+import { SITE_NAME } from "@/lib/site";
 
 interface NewsItem {
   id: string;
@@ -25,6 +26,50 @@ const CATEGORY_COLORS: Record<string, string> = {
   announcement: "#e63946",
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// cache() dedupes the query between generateMetadata and the page render.
+const getArticle = cache(async (id: string): Promise<NewsItem | null> => {
+  if (!UUID_RE.test(id)) return null; // non-UUID would throw a pg cast error
+  const rows = await query<NewsItem>(
+    "SELECT * FROM news WHERE id = $1 AND status = 'published' LIMIT 1",
+    [id]
+  );
+  return rows[0] ?? null;
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const item = await getArticle(id);
+  if (!item) return { title: "Article not found" };
+
+  return {
+    title: item.title,
+    description: item.excerpt,
+    alternates: { canonical: `/news/${item.id}` },
+    openGraph: {
+      type: "article",
+      title: item.title,
+      description: item.excerpt,
+      url: `/news/${item.id}`,
+      siteName: SITE_NAME,
+      publishedTime: item.published_at,
+      authors: item.author_name ? [item.author_name] : undefined,
+      ...(item.image_url ? { images: [item.image_url] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: item.title,
+      description: item.excerpt,
+      ...(item.image_url ? { images: [item.image_url] } : {}),
+    },
+  };
+}
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-NG", {
     year: "numeric", month: "long", day: "numeric",
@@ -35,44 +80,14 @@ function categoryLabel(cat: string) {
   return cat.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function NewsDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const [item, setItem] = useState<NewsItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/news/${id}`)
-      .then((r) => {
-        if (r.status === 404) { setNotFound(true); return null; }
-        return r.json();
-      })
-      .then((data) => {
-        if (data) setItem(data.news);
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  if (loading) {
-    return (
-      <main style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 40, height: 40, border: "3px solid #e2e8f0", borderTopColor: "var(--nsib-navy)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { to { transform: rotate(360deg); } }` }} />
-      </main>
-    );
-  }
-
-  if (notFound || !item) {
-    return (
-      <main style={{ minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem", color: "var(--nsib-navy)" }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>Article not found</h1>
-        <p style={{ color: "#666" }}>This news article may have been removed or the link is incorrect.</p>
-        <Link href="/news" style={{ marginTop: "1rem", padding: "0.75rem 1.75rem", background: "var(--nsib-navy)", color: "white", borderRadius: "10px", fontWeight: 600, textDecoration: "none" }}>← Back to News</Link>
-      </main>
-    );
-  }
+export default async function NewsDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const item = await getArticle(id);
+  if (!item) notFound();
 
   return (
     <main style={{ backgroundColor: "#f8fafc", minHeight: "100vh", paddingBottom: "6rem" }}>
@@ -80,9 +95,9 @@ export default function NewsDetailPage() {
       <section style={{ background: "var(--nsib-navy)", color: "white", padding: "8rem 2rem 4rem", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 70% 30%, rgba(226,48,48,0.1) 0%, transparent 50%)" }} />
         <div className="container" style={{ position: "relative", zIndex: 1, maxWidth: "860px" }}>
-          <button onClick={() => router.back()} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: "8px", padding: "0.4rem 1rem", fontSize: "0.82rem", cursor: "pointer", marginBottom: "2rem" }}>
+          <Link href="/news" style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: "8px", padding: "0.4rem 1rem", fontSize: "0.82rem", textDecoration: "none", marginBottom: "2rem" }}>
             ← Back
-          </button>
+          </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
             <span style={{ padding: "0.3rem 0.9rem", background: CATEGORY_COLORS[item.category] || "#1B2A6B", color: "white", borderRadius: "20px", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               {categoryLabel(item.category)}

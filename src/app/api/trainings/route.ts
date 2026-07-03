@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { clampInt } from "@/lib/params";
 
 // GET — public: list published trainings (with registration counts)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = parseInt(searchParams.get("limit") || "50");
+  const limit = clampInt(searchParams.get("limit"), 50, 100);
 
   try {
     const trainings = await query(

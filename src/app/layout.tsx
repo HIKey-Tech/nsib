@@ -30,11 +30,13 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     locale: "en_NG",
+    images: ["/images/nsib-logo.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} (${SITE_SHORT_NAME})`,
     description: SITE_DESCRIPTION,
+    images: ["/images/nsib-logo.png"],
   },
 };
 

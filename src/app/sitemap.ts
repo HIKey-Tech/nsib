@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/site';
 
-// Curated list of public, indexable routes.
-// ponytail: static list is right while the page set is small and hand-known.
-// Upgrade path: if published reports/news should be indexed individually, make this
-// async and append rows from /api — accepting the DB dependency at request time.
+import { query } from '@/lib/db';
+
+// Re-generate hourly so newly published articles appear without a rebuild.
+export const revalidate = 3600;
+
+// Curated list of public, indexable routes, plus published news articles from the DB.
 const ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
   { path: '/', priority: 1.0, changeFrequency: 'daily' },
   { path: '/about', priority: 0.8, changeFrequency: 'monthly' },
@@ -37,12 +39,33 @@ const ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: '/flight-track', priority: 0.5, changeFrequency: 'monthly' },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
-  return ROUTES.map(({ path, priority, changeFrequency }) => ({
+  const entries: MetadataRoute.Sitemap = ROUTES.map(({ path, priority, changeFrequency }) => ({
     url: `${SITE_URL}${path}`,
     lastModified,
     changeFrequency,
     priority,
   }));
+
+  // Individual news articles — the highest-churn indexable content.
+  // A DB hiccup must never 500 the sitemap, so failures just omit them.
+  try {
+    const news = await query<{ id: string; published_at: string }>(
+      `SELECT id, published_at FROM news WHERE status = 'published'
+       ORDER BY published_at DESC LIMIT 1000`
+    );
+    entries.push(
+      ...news.map((n) => ({
+        url: `${SITE_URL}/news/${n.id}`,
+        lastModified: new Date(n.published_at),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      }))
+    );
+  } catch (err) {
+    console.error('Sitemap news lookup failed:', err);
+  }
+
+  return entries;
 }

@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+public/uploads
+.env
+*.md
+Dockerfile
+docker-compose.yml

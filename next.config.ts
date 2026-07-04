@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Self-contained server bundle for the Docker image (see Dockerfile).
+  output: "standalone",
   // Allow Next.js <Image> to load from Supabase Storage when in demo mode.
   images: {
     remotePatterns: [

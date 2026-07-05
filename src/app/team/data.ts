@@ -95,7 +95,7 @@ export const teamMembers: TeamMember[] = [
     slug: "muonemeh-ndubuisi-lotenna",
     name: "Muonemeh Ndubuisi Lotenna, MBA, FCIB",
     title: "Director, Finance & Accounts",
-    image: "/images/team/Muonemeh Ndubuisi Lotenna.jpeg",
+    image: "/images/team/muonemeh-ndubuisi-lotenna.jpeg",
     bio: [
       "Muonemeh Ndubuisi Lotenna is a seasoned finance and banking executive with over two decades of progressive leadership experience spanning commercial banking, strategic business transformation, and public sector financial management.",
       "He currently serves with the Nigerian Safety Investigation Bureau (NSIB) following his impactful tenure as Director of Finance and Accounts at the Nigerian Airspace Management Agency (NAMA), where he led financial strategy, fiscal governance, and institutional accountability at the highest level. In these roles, he has been instrumental in strengthening financial controls, optimizing balance sheet management, enhancing revenue frameworks, and driving transparency within Nigeria's aviation and safety ecosystem.",
@@ -110,7 +110,7 @@ export const teamMembers: TeamMember[] = [
     slug: "funke-adebayo-arowojobe",
     name: "Funke Adebayo-Arowojobe FSM, FNIM, ACIN, MCIPuRS, MCArb",
     title: "Director, Public Affairs & Family Assistance",
-    image: "/images/team/FUNKE ADEBAYO- AROWOJOBE  FSM, FNIM, ACIN, MCIPuRS, MCArb.jpeg",
+    image: "/images/team/funke-adebayo-arowojobe.jpeg",
     bio: [
       "Funke Adebayo-Arowojobe is a Chartered Insurance and Risk Management Professional with a career spanning two and a half decades in the field. She held several managerial positions in various companies within the Insurance Industry like NEM Insurance Plc, Mutual Benefits Assurance Plc, Law Union and Rock Insurance Plc, Old Mutual West Africa and Standard Alliance Insurance Plc.",
       "After leaving the mainstream, she became the Principal Consultant and Director of Dutee Insurance Brokers and Risk Consultants Limited, a company registered in Nigeria to provide professional and technical risk and insurance management consultancy services to different sectors of the economy, a position she held until her appointment to the public service as the Director Public Affairs and Consumer Protection of The Nigerian Meteorological Agency, also under the Federal Ministry of Aviation and Aerospace Development.",
@@ -127,7 +127,7 @@ export const teamMembers: TeamMember[] = [
     slug: "henry-airiohuodion",
     name: "Mr. Henry Omonzojie Airiohuodion",
     title: "Director, Corporate Services",
-    image: "/images/team/Mr Henry Airiohuodion.jpeg",
+    image: "/images/team/henry-airiohuodion.jpeg",
     bio: [
       "Mr. Henry Omonzojie Airiohuodion holds a Bachelor's degree in Mathematics and Economics (Combined Honours) from the University of Nigeria, Nsukka in the year 1990, followed by completion of his National Youth Service Corps (NYSC) programme in Cross River State in the year 1991.",
       "He joined the public service in June 1992 as a Research Officer II at the National Directorate of Employment. While in service, he pursued a Master's degree programme at the National Open University of Nigeria as one of the pioneer students of the University and obtained a Master degree of Business Administration (Financial Management) in September, 2010.",

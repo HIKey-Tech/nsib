@@ -262,13 +262,6 @@ export default function Home() {
         <div className="container">
           <div className={styles.heroLayout}>
             <div className={styles.heroLeft}>
-              <div className={styles.heroBadge}>
-                <span className={styles.pulseIndicator}></span>
-                <span className={styles.badgeText}>Official · 09°04&prime;N 7°29&prime;E</span>
-                <span className={styles.badgeDivider} />
-                <span className={styles.badgeMuted}>Abuja, NG</span>
-              </div>
-
               <h1 className={styles.heroTitle}>
                 <span className={styles.titleLine}>Advancing safety</span>
                 <span className={styles.titleLine}>across Nigeria&rsquo;s</span>
@@ -453,7 +446,7 @@ export default function Home() {
               <ScrollReveal direction="up" delay={0.1 + i * 0.15} distance={30} key={unit.title}>
                 <Link href={unit.href} className={styles.bureauCard}>
                   <div className={styles.bureauImageWrap}>
-                    <Image src={unit.image} alt={unit.title} fill className={styles.bureauImage} sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                    <Image src={unit.image} alt={unit.title} fill className={styles.bureauImage} sizes="(max-width: 768px) 100vw, 33vw" />
                     <div className={styles.bureauOverlay} />
                   </div>
                   <div className={styles.bureauLabel}>
@@ -609,7 +602,7 @@ export default function Home() {
               <ScrollReveal direction="up" delay={0.1 + index * 0.15} distance={40} key={sector.id} className={styles.sectorCard}>
                 <span className={styles.sectorTopBar} aria-hidden="true" />
                 <div className={styles.sectorImageContainer}>
-                  <Image src={sector.image} alt={sector.title} fill className={styles.sectorImg} sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                  <Image src={sector.image} alt={sector.title} fill className={styles.sectorImg} sizes="(max-width: 768px) 100vw, 33vw" />
                   <span className={styles.sectorImageOverlay} aria-hidden="true" />
                   <span className={styles.sectorTag}>
                     <span className={styles.sectorTagIcon} aria-hidden="true">{sector.icon}</span>
@@ -655,7 +648,7 @@ export default function Home() {
             {displayReports.slice(0, 3).map((item, index) => (
               <ScrollReveal direction="up" delay={0.2 + index * 0.15} distance={40} key={index} className={styles.investigationCard}>
                 <div className={styles.invImageWrapper}>
-                  <Image src={item.image} alt={item.title} fill className={styles.invImage} style={item.hasCover ? undefined : { objectFit: "contain", padding: "2rem" }} sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                  <Image src={item.image} alt={item.title} fill className={styles.invImage} style={item.hasCover ? undefined : { objectFit: "contain", padding: "2rem" }} sizes="(max-width: 768px) 100vw, 33vw" />
                 </div>
                 <div className={styles.invCardBody}>
                   <div className={styles.cardHeader}>

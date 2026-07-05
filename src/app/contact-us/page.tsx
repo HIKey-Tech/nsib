@@ -3,6 +3,20 @@
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
 export default function ContactPage() {
+  // Opens the visitor's own mail client addressed to NSIB. encodeURIComponent
+  // neutralises any special characters in user input, so nothing can inject
+  // extra mailto headers or markup.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const v = (k: string) => String(f.get(k) ?? "").trim();
+    const subject = encodeURIComponent(`Website Enquiry: ${v("subject")}`);
+    const body = encodeURIComponent(
+      `Name: ${v("name")}\nEmail: ${v("email")}\n\n${v("message")}`
+    );
+    window.location.href = `mailto:info@nsib.gov.ng?subject=${subject}&body=${body}`;
+  }
+
   return (
     <main style={{ backgroundColor: 'var(--bg-primary)', position: 'relative', overflow: 'hidden' }}>
       
@@ -211,31 +225,6 @@ export default function ContactPage() {
                       </a>
                     </p>
                   </div>
-                  <div>
-                    <span style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>Staff Portal</span>
-                    <p style={{ marginTop: '0.25rem' }}>
-                      <a href="https://webmail.nsib.gov.ng" target="_blank" rel="noreferrer" 
-                         style={{ 
-                           display: 'inline-flex', alignItems: 'center', gap: '0.5rem', 
-                           color: 'var(--nsib-navy)', fontWeight: 600, fontSize: '1.1rem',
-                           transition: 'all 0.2s'
-                         }}
-                         onMouseEnter={(e) => {
-                           e.currentTarget.style.color = 'var(--nsib-red)';
-                           e.currentTarget.querySelector('svg')!.style.transform = 'translateX(4px)';
-                         }}
-                         onMouseLeave={(e) => {
-                           e.currentTarget.style.color = 'var(--nsib-navy)';
-                           e.currentTarget.querySelector('svg')!.style.transform = 'translateX(0)';
-                         }}
-                      >
-                        Webmail Login
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
-                          <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                      </a>
-                    </p>
-                  </div>
                 </div>
               </div>
             </ScrollReveal>
@@ -262,13 +251,15 @@ export default function ContactPage() {
                 <h2 className="text-navy" style={{ marginBottom: '0.5rem', fontSize: '2rem' }}>Send Us a Message</h2>
                 <p className="text-slate" style={{ marginBottom: '2.5rem', fontSize: '1.05rem' }}>Fill out the form below and we will get back to you as soon as possible.</p>
                 
-                <form style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                   
                   <div className="responsive-grid-2col">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Full Name</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
+                        name="name"
+                        required
                         placeholder="John Doe"
                         style={{ 
                           padding: '0.85rem 1rem', 
@@ -285,8 +276,10 @@ export default function ContactPage() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Email Address</label>
-                      <input 
-                        type="email" 
+                      <input
+                        type="email"
+                        name="email"
+                        required
                         placeholder="john@example.com"
                         style={{ 
                           padding: '0.85rem 1rem', 
@@ -305,8 +298,10 @@ export default function ContactPage() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Subject</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
+                      name="subject"
+                      required
                       placeholder="How can we help you?"
                       style={{ 
                         padding: '0.85rem 1rem', 
@@ -324,8 +319,10 @@ export default function ContactPage() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Message</label>
-                    <textarea 
-                      rows={6} 
+                    <textarea
+                      rows={6}
+                      name="message"
+                      required
                       placeholder="Write your message here..."
                       style={{ 
                         padding: '1rem', 
@@ -343,11 +340,11 @@ export default function ContactPage() {
                     />
                   </div>
                   
-                  <button 
-                    type="button" 
-                    className="btn btn-primary" 
-                    style={{ 
-                      alignSelf: 'flex-start', 
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{
+                      alignSelf: 'flex-start',
                       marginTop: '1rem',
                       padding: '1rem 2rem',
                       fontSize: '1.1rem',

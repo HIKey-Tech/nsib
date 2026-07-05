@@ -46,6 +46,27 @@ export default function ReportingPage() {
     return `${h}:${m}`;
   });
 
+  // Opens the reporter's own mail client addressed to NSIB. encodeURIComponent
+  // neutralises special characters in user input, so nothing can inject extra
+  // mailto headers or markup.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const v = (k: string) => String(f.get(k) ?? "").trim();
+    const date = selectedDate
+      ? `${selectedDate.getDate().toString().padStart(2, "0")}/${(selectedDate.getMonth() + 1).toString().padStart(2, "0")}/${selectedDate.getFullYear()}`
+      : "Not specified";
+    const subject = encodeURIComponent(`Occurrence Report — ${incidentType.toUpperCase()}`);
+    const body = encodeURIComponent(
+      `Incident Modality: ${incidentType}\n` +
+      `Date of Occurrence: ${date}\n` +
+      `Time: ${selectedTime || "Not specified"}\n` +
+      `Location: ${v("location")}\n\n` +
+      `Description:\n${v("description")}`
+    );
+    window.location.href = `mailto:info@nsib.gov.ng?subject=${subject}&body=${body}`;
+  }
+
 
   return (
     <main style={{ backgroundColor: 'var(--bg-primary)', minHeight: '100vh', paddingBottom: '8rem', overflowX: 'hidden', perspective: '1000px' }}>
@@ -227,7 +248,7 @@ export default function ReportingPage() {
               }}
             >
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <form style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
                   
                   {/* Step 1: Type */}
                   <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -443,9 +464,11 @@ export default function ReportingPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Location</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. 10nm North of ABV VOR, or specific coordinates" 
+                      <input
+                        type="text"
+                        name="location"
+                        required
+                        placeholder="e.g. 10nm North of ABV VOR, or specific coordinates"
                         style={{ 
                           padding: '0.85rem 1rem', 
                           borderRadius: 'var(--radius-md)', 
@@ -463,8 +486,10 @@ export default function ReportingPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Brief Description</label>
-                      <textarea 
-                        rows={5} 
+                      <textarea
+                        rows={5}
+                        name="description"
+                        required
                         placeholder="Describe the sequence of events, conditions, and any known damage or injuries..."
                         style={{ 
                           padding: '1rem', 
@@ -486,10 +511,10 @@ export default function ReportingPage() {
                   
                   {/* Submit Action */}
                   <div style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
-                    <button 
-                      type="button" 
-                      className="btn btn-primary" 
-                      style={{ 
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      style={{
                         width: '100%',
                         padding: '1.25rem',
                         fontSize: '1.1rem',

@@ -15,6 +15,24 @@ export default function CommentOnRegulationsPage() {
     "Rail Transport Safety Standards Draft"
   ];
 
+  // Opens the commenter's own mail client addressed to NSIB. encodeURIComponent
+  // neutralises special characters in user input, so nothing can inject extra
+  // mailto headers or markup.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const v = (k: string) => String(f.get(k) ?? "").trim();
+    const subject = encodeURIComponent(`Regulatory Comment — ${selectedDocument}`);
+    const body = encodeURIComponent(
+      `Document: ${selectedDocument}\n` +
+      `Name: ${v("name")}\n` +
+      `Organization: ${v("org") || "Not specified"}\n` +
+      `Section/Clause: ${v("clause") || "Not specified"}\n\n` +
+      `Comments:\n${v("comments")}`
+    );
+    window.location.href = `mailto:info@nsib.gov.ng?subject=${subject}&body=${body}`;
+  }
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -210,7 +228,7 @@ export default function CommentOnRegulationsPage() {
               <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(27,42,107,0.03) 0%, transparent 70%)', borderRadius: '50%' }} />
 
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <form style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                   
                   {/* Select Document Custom Dropdown */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }} ref={dropdownRef}>
@@ -306,8 +324,10 @@ export default function CommentOnRegulationsPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Full Name</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
+                        name="name"
+                        required
                         placeholder="Your name"
                         style={{ 
                           padding: '0.85rem 1rem', 
@@ -324,8 +344,9 @@ export default function CommentOnRegulationsPage() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Organization <span className="text-slate" style={{fontWeight: 400}}>(Optional)</span></label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
+                        name="org"
                         placeholder="Your organization"
                         style={{ 
                           padding: '0.85rem 1rem', 
@@ -345,9 +366,10 @@ export default function CommentOnRegulationsPage() {
                   {/* Specific Clause */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Specific Section/Clause</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Part 4, Clause 12.1" 
+                    <input
+                      type="text"
+                      name="clause"
+                      placeholder="e.g. Part 4, Clause 12.1"
                       style={{ 
                         padding: '0.85rem 1rem', 
                         borderRadius: 'var(--radius-md)', 
@@ -365,8 +387,10 @@ export default function CommentOnRegulationsPage() {
                   {/* Comments textarea */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Your Comments/Suggestions</label>
-                    <textarea 
-                      rows={6} 
+                    <textarea
+                      rows={6}
+                      name="comments"
+                      required
                       placeholder="Share your feedback, proposed modifications, or rationale..."
                       style={{ 
                         padding: '1rem', 
@@ -386,9 +410,9 @@ export default function CommentOnRegulationsPage() {
                   
                   {/* Submit Action */}
                   <div style={{ marginTop: '1rem' }}>
-                    <button 
-                      type="button" 
-                      className="btn btn-primary" 
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
                       style={{ 
                         padding: '1.25rem 2.5rem',
                         fontSize: '1.1rem',

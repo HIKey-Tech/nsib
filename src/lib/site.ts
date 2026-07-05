@@ -11,7 +11,7 @@ export const SITE_DESCRIPTION =
 
 // Verified public contact details (source: /contact-us).
 const CONTACT = {
-  telephone: '+234-807-709-0900',
+  telephone: '+234-807-709-0908',
   email: 'info@nsib.gov.ng',
   streetAddress: 'Nnamdi Azikiwe International Airport',
   addressLocality: 'Abuja',

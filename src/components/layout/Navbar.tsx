@@ -91,8 +91,8 @@ export default function Navbar() {
               <Link href="/flight-track" className={styles.dropdownLink}>Flight Tracking</Link>
               <Link href="/vessel-tracking" className={styles.dropdownLink}>Ship & Vessel Tracking</Link>
               <Link href="/help-desk" className={styles.dropdownLink}>Operational Help Desk</Link>
-              <Link href="/open-ticket" className={styles.dropdownLink}>Check Existing Tickets</Link>
-              <Link href="/login" className={styles.dropdownLink}>Sign up to OLC</Link>
+              <Link href="/open-ticket" className={styles.dropdownLink}>Request a Status Update</Link>
+              <Link href="/learning-portal" className={styles.dropdownLink}>Sign up to OLC</Link>
               <Link href="/reporting-guidelines" className={styles.dropdownLink}>Accident Reporting Guidelines</Link>
             </div>
           </div>

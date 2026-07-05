@@ -77,7 +77,7 @@ export default function MembershipLevelsPage() {
             <li>Basic incident reporting guidelines</li>
             <li>Monthly newsletter access</li>
           </ul>
-          <Link href="/login" className="btn btn-outline" style={{ width: '100%' }}>Select Tier</Link>
+          <Link href="/learning-portal" className="btn btn-outline" style={{ width: '100%' }}>Select Tier</Link>
         </div>
 
         {/* Tier 2 */}
@@ -91,7 +91,7 @@ export default function MembershipLevelsPage() {
             <li>Digital certificate of completion</li>
             <li>Access to investigation manual library</li>
           </ul>
-          <Link href="/login" className="btn btn-primary" style={{ width: '100%' }}>Select Tier</Link>
+          <Link href="/learning-portal" className="btn btn-primary" style={{ width: '100%' }}>Select Tier</Link>
         </div>
 
         {/* Tier 3 */}
@@ -104,7 +104,7 @@ export default function MembershipLevelsPage() {
             <li>Advanced compliance training</li>
             <li>Dedicated account support</li>
           </ul>
-          <Link href="/login" className="btn btn-outline" style={{ width: '100%' }}>Contact Us</Link>
+          <Link href="/contact-us" className="btn btn-outline" style={{ width: '100%' }}>Contact Us</Link>
         </div>
       </div>
     </main>

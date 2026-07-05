@@ -132,8 +132,8 @@ export const directorates: Directorate[] = [
   },
   {
     num: "08",
-    name: "Operations",
-    label: "Directorate of Operations",
+    name: "Special Duties",
+    label: "Directorate of Special Duties",
     slug: "operations",
     desc: "Manages deployment logistics, field coordination, and rapid response readiness, ensuring investigators can reach accident sites without delay.",
     mandate: "To maintain the Bureau's operational readiness and coordinate the swift, effective deployment of investigative teams to accident sites across Nigeria's transport network.",

@@ -1,0 +1,12 @@
+
+7. Backups
+
+sudo mkdir -p /srv/nsib-backups
+sudo chown root:root /srv/nsib-backups
+chmod +x scripts/backup.sh
+
+#email=admin@nsib.gov.ng 
+#password=auAJNLY234@NSIB
+
+crontab -e    # add this line:
+# 15 2 * * * cd /srv/nsib-site && ./scripts/backup.sh >> /var/log/nsib-backup.log 2>&1

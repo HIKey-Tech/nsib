@@ -68,6 +68,7 @@ export default function Footer() {
               <li><Link href="/learning-portal">Learning Portal</Link></li>
               <li><Link href="/vacancies">Careers</Link></li>
               <li><Link href="/contact-us">Contact Us</Link></li>
+              <li><a href="https://webmail.nsib.gov.ng/" target="_blank" rel="noopener noreferrer">Staff Email</a></li>
             </ul>
           </div>
 

@@ -821,6 +821,9 @@ export default function Home() {
           <ScrollReveal direction="up" delay={0.1} distance={40} className={styles.ctaContent}>
             <h2>Report An Accident or Incident</h2>
             <p>Safety is a collective responsibility. If you witness or are involved in an aviation, maritime, or rail accident, please report it to us immediately.</p>
+            <p style={{ fontWeight: 700, letterSpacing: "0.02em" }}>
+              24/7 Emergency Lines: <a href="tel:+2348077090908" className={styles.textLinkWhite}>+234 807 709 0908</a> / <a href="tel:+2348077090909" className={styles.textLinkWhite}>0909</a>
+            </p>
             <div className={styles.ctaButtons}>
               <Link href="/report-accident" className="btn btn-secondary" style={{ padding: "1.25rem 2.5rem", fontSize: "1.1rem" }}>
                 Secure Reporting Portal

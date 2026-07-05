@@ -86,7 +86,7 @@ export default function FaqsPage() {
           },
           {
             q: "How can I report a transport accident?",
-            a: "You can report an accident immediately via our 24/7 Duty Officer line (+234 807 709 0900) or by using the Report an Accident portal on our website."
+            a: "You can report an accident immediately via our 24/7 Duty Officer lines (+234 807 709 0908 / 0909) or by using the Report an Accident portal on our website."
           },
           {
             q: "Are NSIB reports available to the public?",

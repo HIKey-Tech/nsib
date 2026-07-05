@@ -6,17 +6,8 @@ import styles from './help-desk.module.css';
 
 const CATEGORIES = [
   {
-    value: 'technical',
-    label: 'Technical Support',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
-      </svg>
-    ),
-  },
-  {
     value: 'inquiry',
-    label: 'General Inquiry',
+    label: 'General Enquiry',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
@@ -32,27 +23,30 @@ const CATEGORIES = [
       </svg>
     ),
   },
-  {
-    value: 'login',
-    label: 'Login Issue',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      </svg>
-    ),
-  },
-];
-
-const PRIORITIES = [
-  { value: 'low', label: 'Low', color: '#6b7280' },
-  { value: 'normal', label: 'Normal', color: '#2563eb' },
-  { value: 'high', label: 'High', color: '#d97706' },
-  { value: 'urgent', label: 'Urgent', color: '#dc2626' },
 ];
 
 export default function HelpDeskPage() {
-  const [selectedCategory, setSelectedCategory] = useState('technical');
-  const [selectedPriority, setSelectedPriority] = useState('normal');
+  const [selectedCategory, setSelectedCategory] = useState('inquiry');
+
+  // Opens the requester's own mail client addressed to NSIB. encodeURIComponent
+  // neutralises special characters in user input, so nothing can inject extra
+  // mailto headers or markup.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const v = (k: string) => String(f.get(k) ?? '').trim();
+    const categoryLabel = CATEGORIES.find((c) => c.value === selectedCategory)?.label || selectedCategory;
+    const subject = encodeURIComponent(`Help Desk — ${categoryLabel}`);
+    const body = encodeURIComponent(
+      `Category: ${categoryLabel}\n` +
+      `Name: ${v('name')}\n` +
+      `Email: ${v('email')}\n` +
+      `Organisation: ${v('org') || 'Not specified'}\n` +
+      `Phone: ${v('phone') || 'Not specified'}\n\n` +
+      `Description:\n${v('description')}`
+    );
+    window.location.href = `mailto:info@nsib.gov.ng?subject=${subject}&body=${body}`;
+  }
 
   return (
     <main className={styles.page}>
@@ -74,11 +68,11 @@ export default function HelpDeskPage() {
           backgroundImage: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 40%), radial-gradient(circle at bottom left, rgba(226, 48, 48, 0.15) 0%, transparent 50%)',
           zIndex: 0
         }} />
-        
+
         {/* Floating background elements */}
         <div className="floating-element" style={{ position: 'absolute', top: '10%', right: '10%', width: '150px', height: '150px', borderRadius: '20px', background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.05)', transform: 'rotateZ(15deg)', zIndex: 1 }} />
         <div className="floating-element-slow" style={{ position: 'absolute', bottom: '-10%', left: '5%', width: '250px', height: '250px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(226,48,48,0.2) 0%, rgba(226,48,48,0) 100%)', backdropFilter: 'blur(20px)', zIndex: 1 }} />
-        
+
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
           <Link href="/operations-centre" style={{
             display: "inline-flex",
@@ -138,9 +132,9 @@ export default function HelpDeskPage() {
             marginBottom: "2rem",
             textShadow: '0 5px 15px rgba(0,0,0,0.2)'
           }}>
-            Submit support requests, follow up on existing tickets, and access technical assistance from the NSIB operations team.
+            Send us a General Enquiry or a Freedom of Information (FOI) request. Submitting the form opens your email client, addressed directly to the NSIB team.
           </p>
-          
+
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }}></span>
@@ -148,8 +142,6 @@ export default function HelpDeskPage() {
              </div>
              <span>|</span>
              <span>Mon – Fri · 8:00 AM – 5:00 PM WAT</span>
-             <span>|</span>
-             <span>Avg. response: 24 hrs</span>
           </div>
         </div>
 
@@ -173,28 +165,6 @@ export default function HelpDeskPage() {
       <section className={styles.content}>
         {/* Sidebar */}
         <div className={styles.sidebar}>
-          {/* Track Ticket */}
-          <div className={styles.statusCard}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardIcon}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              </div>
-              <h3>Track a Ticket</h3>
-            </div>
-            <p>Enter your ticket ID to check the current status of your support request.</p>
-            <div className={styles.searchGroup}>
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="e.g. TICK-1234"
-                aria-label="Ticket ID"
-              />
-              <button type="button" className={styles.searchBtn}>Check</button>
-            </div>
-          </div>
-
           {/* Info */}
           <div className={styles.infoCard}>
             <h4>Direct Channels</h4>
@@ -207,7 +177,7 @@ export default function HelpDeskPage() {
                 </div>
                 <div>
                   <span className={styles.infoListLabel}>Email</span>
-                  <span className={styles.infoListValue}>helpdesk@nsib.gov.ng</span>
+                  <span className={styles.infoListValue}>info@nsib.gov.ng</span>
                 </div>
               </li>
               <li className={styles.infoListItem}>
@@ -218,7 +188,7 @@ export default function HelpDeskPage() {
                 </div>
                 <div>
                   <span className={styles.infoListLabel}>Phone</span>
-                  <span className={styles.infoListValue}>+234 (0) 9 — 8765 4321</span>
+                  <span className={styles.infoListValue}>+234 807 709 0908 / 0909</span>
                 </div>
               </li>
               <li className={styles.infoListItem}>
@@ -239,11 +209,11 @@ export default function HelpDeskPage() {
         {/* Form */}
         <div className={styles.formCard}>
           <div className={styles.formHeader}>
-            <h2>Open a New Ticket</h2>
-            <span className={styles.formTag}>Secure Submission</span>
+            <h2>Send Us a Request</h2>
+            <span className={styles.formTag}>Via Email</span>
           </div>
 
-          <form className={styles.formBody}>
+          <form className={styles.formBody} onSubmit={handleSubmit}>
             {/* Category */}
             <fieldset className={styles.fieldset}>
               <span className={styles.fieldLabel}>Category</span>
@@ -270,11 +240,11 @@ export default function HelpDeskPage() {
             <div className={styles.formRow}>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="hd-name">Full Name</label>
-                <input id="hd-name" type="text" className={styles.input} placeholder="Enter your full name" />
+                <input id="hd-name" name="name" type="text" required className={styles.input} placeholder="Enter your full name" />
               </div>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="hd-email">Email Address</label>
-                <input id="hd-email" type="email" className={styles.input} placeholder="your@email.com" />
+                <input id="hd-email" name="email" type="email" required className={styles.input} placeholder="your@email.com" />
               </div>
             </div>
 
@@ -282,43 +252,23 @@ export default function HelpDeskPage() {
             <div className={styles.formRow}>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="hd-org">Organisation <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></label>
-                <input id="hd-org" type="text" className={styles.input} placeholder="Your organisation" />
+                <input id="hd-org" name="org" type="text" className={styles.input} placeholder="Your organisation" />
               </div>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="hd-phone">Phone <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></label>
-                <input id="hd-phone" type="tel" className={styles.input} placeholder="+234 (0)..." />
+                <input id="hd-phone" name="phone" type="tel" className={styles.input} placeholder="+234 (0)..." />
               </div>
             </div>
-
-            {/* Priority */}
-            <fieldset className={styles.fieldset}>
-              <span className={styles.fieldLabel}>Priority</span>
-              <div className={styles.priorityRow}>
-                {PRIORITIES.map((p) => (
-                  <label key={p.value} className={styles.priorityOption}>
-                    <input
-                      type="radio"
-                      name="priority"
-                      value={p.value}
-                      checked={selectedPriority === p.value}
-                      onChange={() => setSelectedPriority(p.value)}
-                    />
-                    <span className={styles.priorityBadge}>
-                      <span className={styles.priorityDot} style={{ background: p.color }} />
-                      {p.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
 
             {/* Description */}
             <div className={styles.field}>
               <label className={styles.label} htmlFor="hd-desc">Description</label>
               <textarea
                 id="hd-desc"
+                name="description"
+                required
                 className={`${styles.input} ${styles.textarea}`}
-                placeholder="Describe your issue in detail. Include any error messages, steps to reproduce, or relevant context."
+                placeholder="Describe your enquiry or FOI request in detail."
               />
             </div>
 
@@ -326,12 +276,12 @@ export default function HelpDeskPage() {
             <div className={styles.submitRow}>
               <span className={styles.submitNote}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
                 </svg>
-                Your data is handled securely and confidentially.
+                Opens your email client, addressed to info@nsib.gov.ng.
               </span>
               <button type="submit" className={styles.submitBtn}>
-                Submit Ticket
+                Send Request
                 <svg className={styles.submitArrow} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                 </svg>

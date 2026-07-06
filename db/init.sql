@@ -61,6 +61,9 @@ CREATE TABLE IF NOT EXISTS news (
   content      TEXT        NOT NULL DEFAULT '',
   category     TEXT        NOT NULL DEFAULT 'general',
   image_url    TEXT,
+  report_url   TEXT,                                    -- optional attached report/document
+  report_name  TEXT,
+  report_size  BIGINT,
   status       TEXT        NOT NULL DEFAULT 'published'
                            CHECK (status IN ('draft', 'published', 'archived')),
   published_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -181,6 +184,9 @@ ALTER TABLE reports ADD COLUMN IF NOT EXISTS vehicle_type    TEXT;
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS train_name      TEXT;
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS occurrence      TEXT;
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS report_status   TEXT;
+ALTER TABLE news    ADD COLUMN IF NOT EXISTS report_url      TEXT;
+ALTER TABLE news    ADD COLUMN IF NOT EXISTS report_name     TEXT;
+ALTER TABLE news    ADD COLUMN IF NOT EXISTS report_size     BIGINT;
 
 -- Allow the "other" accident sector (older DBs have a 3-sector CHECK).
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_sector_check;

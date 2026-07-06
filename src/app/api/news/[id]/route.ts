@@ -33,11 +33,14 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const rows = await query<{ image_url: string | null }>(
-      "DELETE FROM news WHERE id = $1 RETURNING image_url",
+    const rows = await query<{ image_url: string | null; report_url: string | null }>(
+      "DELETE FROM news WHERE id = $1 RETURNING image_url, report_url",
       [id]
     );
-    if (rows[0]) await deleteUpload(rows[0].image_url);
+    if (rows[0]) {
+      await deleteUpload(rows[0].image_url);
+      await deleteUpload(rows[0].report_url);
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("News delete error:", err);

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   if (payload.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
-  const { title, excerpt, content, category, image_url, published_at } = body;
+  const { title, excerpt, content, category, image_url, published_at, report_url, report_name, report_size } = body;
 
   if (!title || !excerpt) {
     return NextResponse.json({ error: "Title and excerpt are required" }, { status: 400 });
@@ -51,8 +51,8 @@ export async function POST(request: Request) {
 
   try {
     const rows = await query(
-      `INSERT INTO news (title, excerpt, content, category, image_url, status, published_at, author_id, author_name)
-       VALUES ($1, $2, $3, $4, $5, 'published', $6, $7, $8)
+      `INSERT INTO news (title, excerpt, content, category, image_url, report_url, report_name, report_size, status, published_at, author_id, author_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'published', $9, $10, $11)
        RETURNING *`,
       [
         title,
@@ -60,6 +60,9 @@ export async function POST(request: Request) {
         content || "",
         category || "general",
         image_url || null,
+        report_url || null,
+        report_name || null,
+        report_size || null,
         published_at || new Date().toISOString(),
         payload.userId,
         payload.email,

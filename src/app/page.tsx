@@ -716,7 +716,7 @@ export default function Home() {
                 <div className={styles.newsPanelHeader}>
                   <div>
                     <span className={styles.sectionLabel}>Latest Updates</span>
-                    <h2>News &amp; <em>Publications</em></h2>
+                    <h2>Press Releases &amp; <em>Publications</em></h2>
                   </div>
                   <Link href="/news" className={styles.viewAllLink}>View All →</Link>
                 </div>

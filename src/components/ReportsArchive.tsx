@@ -65,7 +65,7 @@ const TabNav = ({ active }: { active: string }) => {
     { id: "maritime", label: "Maritime Reports", href: "/marine-reports" },
     { id: "rail", label: "Rail Reports", href: "/rail-reports" },
     { id: "other", label: "Other Reports", href: "/other-reports" },
-    { id: "news", label: "News & Updates", href: "/news" },
+    { id: "news", label: "Press Release", href: "/news" },
     { id: "legislations", label: "Acts & Legislations", href: "/legislations" },
     { id: "mou", label: "MoUs", href: "/mou" },
     { id: "forms", label: "Forms & Checklists", href: "/investigation-forms-and-checklists" },

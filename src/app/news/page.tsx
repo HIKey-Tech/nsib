@@ -34,7 +34,7 @@ const TabNav = ({ active }: { active: string }) => {
     { id: "aircraft",      label: "Aircraft Reports",       href: "/air-reports" },
     { id: "maritime",      label: "Maritime Reports",       href: "/marine-reports" },
     { id: "rail",          label: "Rail Reports",           href: "/rail-reports" },
-    { id: "news",          label: "News & Updates",         href: "/news" },
+    { id: "news",          label: "Press Release",          href: "/news" },
     { id: "legislations",  label: "Acts & Legislations",    href: "/legislations" },
     { id: "mou",           label: "MoUs",                   href: "/mou" },
     { id: "forms",         label: "Forms & Checklists",     href: "/investigation-forms-and-checklists" },
@@ -174,7 +174,7 @@ export default function NewsPage() {
           <div style={{ maxWidth: "800px" }}>
             <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
               style={{ color: "white", fontSize: "clamp(3.5rem, 6vw, 4.5rem)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1.5rem", textShadow: "0 20px 40px rgba(0,0,0,0.4)", letterSpacing: "-0.02em" }}>
-              News &amp;<br/>Updates
+              Press<br/>Release
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.4 }}
               style={{ fontSize: "1.2rem", color: "rgba(255,255,255,0.85)", maxWidth: "600px", lineHeight: 1.7, textShadow: "0 10px 20px rgba(0,0,0,0.2)" }}>

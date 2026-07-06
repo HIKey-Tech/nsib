@@ -67,6 +67,8 @@ interface NewsItem {
   content: string;
   category: NewsCategory;
   image_url: string | null;
+  report_url: string | null;
+  report_name: string | null;
   published_at: string;
   author_name: string;
   status: string;
@@ -240,6 +242,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const newsImageInputRef = useRef<HTMLInputElement>(null);
+  const newsReportInputRef = useRef<HTMLInputElement>(null);
   const eventFlyerInputRef = useRef<HTMLInputElement>(null);
 
   const [user, setUser] = useState<User | null>(null);
@@ -296,6 +299,9 @@ export default function DashboardPage() {
   const [newsImagePreview, setNewsImagePreview] = useState("");
   const [newsImageUploading, setNewsImageUploading] = useState(false);
   const [newsImageMode, setNewsImageMode] = useState<"upload" | "url">("upload");
+  const [newsReportFile, setNewsReportFile] = useState<File | null>(null);
+  const [newsReportUploading, setNewsReportUploading] = useState(false);
+  const [newsProgress, setNewsProgress] = useState(0);
   const [newsDate, setNewsDate] = useState(new Date().toISOString().split("T")[0]);
   const [newsSubmitting, setNewsSubmitting] = useState(false);
   const [newsError, setNewsError] = useState("");
@@ -874,6 +880,12 @@ export default function DashboardPage() {
     setNewsImageUrl("");
   };
 
+  const handleNewsReportSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNewsReportFile(file);
+  };
+
   const handleNewsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsTitle || !newsExcerpt) {
@@ -883,6 +895,9 @@ export default function DashboardPage() {
     setNewsSubmitting(true);
     setNewsError("");
     setNewsSuccess("");
+    const totalSteps = 1 + (newsImageFile ? 1 : 0) + (newsReportFile ? 1 : 0);
+    let doneSteps = 0;
+    setNewsProgress(0);
     try {
       let finalImageUrl = newsImageUrl || null;
 
@@ -895,6 +910,20 @@ export default function DashboardPage() {
         setNewsImageUploading(false);
         if (!imgRes.ok) throw new Error(imgData.error || "Image upload failed");
         finalImageUrl = imgData.url;
+        setNewsProgress(Math.round((++doneSteps / totalSteps) * 100));
+      }
+
+      let finalReportUrl = null, finalReportName = null, finalReportSize = null;
+      if (newsReportFile) {
+        setNewsReportUploading(true);
+        const fd = new FormData();
+        fd.append("file", newsReportFile);
+        const repRes = await fetch("/api/news/upload-report", { method: "POST", body: fd });
+        const repData = await repRes.json();
+        setNewsReportUploading(false);
+        if (!repRes.ok) throw new Error(repData.error || "Report upload failed");
+        finalReportUrl = repData.url; finalReportName = repData.name; finalReportSize = repData.size;
+        setNewsProgress(Math.round((++doneSteps / totalSteps) * 100));
       }
 
       const res = await fetch("/api/news", {
@@ -906,21 +935,29 @@ export default function DashboardPage() {
           content: newsContent,
           category: newsCategory,
           image_url: finalImageUrl,
+          report_url: finalReportUrl,
+          report_name: finalReportName,
+          report_size: finalReportSize,
           published_at: new Date(newsDate).toISOString(),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to publish news");
-      setNewsSuccess("News article published successfully!");
+      setNewsProgress(100);
+      setNewsSuccess("Press release published successfully!");
       setNewsTitle(""); setNewsExcerpt(""); setNewsContent("");
       setNewsImageUrl(""); setNewsImageFile(null); setNewsImagePreview("");
+      setNewsReportFile(null);
       if (newsImageInputRef.current) newsImageInputRef.current.value = "";
+      if (newsReportInputRef.current) newsReportInputRef.current.value = "";
       setNewsDate(new Date().toISOString().split("T")[0]);
       fetchNews();
-      setTimeout(() => { setNewsSuccess(""); setActiveSection("manage-news"); }, 2000);
+      setTimeout(() => { setNewsSuccess(""); setNewsProgress(0); setActiveSection("manage-news"); }, 2000);
     } catch (err) {
+      setNewsProgress(0);
       setNewsError(err instanceof Error ? err.message : "Failed to publish");
       setNewsImageUploading(false);
+      setNewsReportUploading(false);
     }
     setNewsSubmitting(false);
   };
@@ -1018,7 +1055,7 @@ export default function DashboardPage() {
               <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
               <path d="M18 14h-8" /><path d="M15 18h-5" /><path d="M10 6h8v4h-8V6Z" />
             </svg>
-            Post News
+            Post Press Release
           </button>
           )}
           <button
@@ -1029,7 +1066,7 @@ export default function DashboardPage() {
               <path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5" />
               <path d="M17.586 3.586a2 2 0 1 1 2.828 2.828L12 15l-4 1 1-4 8.586-8.414z" />
             </svg>
-            Manage News
+            Manage Press Releases
           </button>
           {user?.role === "admin" && (
           <button
@@ -1240,7 +1277,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className={styles.statNum}>{analytics.totals.news_views.toLocaleString()}</div>
-                      <div className={styles.statLabel}>News Article Views</div>
+                      <div className={styles.statLabel}>Press Release Views</div>
                     </div>
                   </div>
                   <div className={styles.statCard}>
@@ -1290,9 +1327,9 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <div className={styles.listCard}>
-                    <h2 className={styles.sectionTitle}>Top News Articles</h2>
+                    <h2 className={styles.sectionTitle}>Top Press Releases</h2>
                     {analytics.topNews.length === 0 ? (
-                      <p className={styles.emptyNote}>No news views recorded yet.</p>
+                      <p className={styles.emptyNote}>No press release views recorded yet.</p>
                     ) : (
                       <RankBars items={analytics.topNews.map((n) => ({ label: n.title, count: n.count }))} />
                     )}
@@ -1713,12 +1750,12 @@ export default function DashboardPage() {
             )}
           </div>
         )}
-        {/* Post News Section */}
+        {/* Post Press Release Section */}
         {activeSection === "news" && user?.role === "admin" && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h1 className={styles.pageTitle}>Post News Article</h1>
-              <p className={styles.pageDesc}>Publish news, press releases, and announcements to the NSIB website.</p>
+              <h1 className={styles.pageTitle}>Post Press Release</h1>
+              <p className={styles.pageDesc}>Publish press releases and announcements to the NSIB website.</p>
             </div>
 
             {newsError && (
@@ -1792,6 +1829,35 @@ export default function DashboardPage() {
                       </>
                     )}
                   </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Report <span style={{ fontWeight: 400, color: "#999" }}>(optional)</span></label>
+                    <div
+                      className={styles.dropZone}
+                      style={{ minHeight: "100px", padding: "1rem" }}
+                      onClick={() => newsReportInputRef.current?.click()}
+                    >
+                      <input
+                        ref={newsReportInputRef}
+                        type="file"
+                        accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx"
+                        className={styles.fileInput}
+                        onChange={handleNewsReportSelect}
+                      />
+                      {newsReportFile ? (
+                        <div className={styles.fileSelected}>
+                          <p style={{ fontSize: "0.875rem", color: "#1E293B", fontWeight: 600 }}>{newsReportFile.name}</p>
+                          <button type="button" className={styles.fileRemove} onClick={e => { e.stopPropagation(); setNewsReportFile(null); if (newsReportInputRef.current) newsReportInputRef.current.value = ""; }}>Remove file</button>
+                        </div>
+                      ) : (
+                        <div className={styles.dropZoneContent}>
+                          <div className={styles.dropIcon}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                          </div>
+                          <p className={styles.dropSub}><strong>Click to upload</strong> · PDF, Word, Excel · Max 20MB</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className={styles.formRight}>
@@ -1811,23 +1877,31 @@ export default function DashboardPage() {
                     <label className={styles.formLabel} htmlFor="news-date">Publication Date</label>
                     <input id="news-date" type="date" className={styles.formInput} value={newsDate} onChange={e => setNewsDate(e.target.value)} />
                   </div>
-                  <button type="submit" className={styles.submitBtn} disabled={newsSubmitting || newsImageUploading}>
-                    {newsImageUploading ? (<><span className={styles.btnSpinner}></span> Uploading image…</>) : newsSubmitting ? (<><span className={styles.btnSpinner}></span> Publishing…</>) : (<>
+                  <button type="submit" className={styles.submitBtn} disabled={newsSubmitting || newsImageUploading || newsReportUploading}>
+                    {newsImageUploading ? (<><span className={styles.btnSpinner}></span> Uploading image…</>) : newsReportUploading ? (<><span className={styles.btnSpinner}></span> Uploading report…</>) : newsSubmitting ? (<><span className={styles.btnSpinner}></span> Publishing…</>) : (<>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /><path d="M18 14h-8" /><path d="M15 18h-5" /></svg>
-                      Publish Article
+                      Publish Press Release
                     </>)}
                   </button>
+                  {newsSubmitting && (
+                    <div style={{ marginTop: "0.75rem" }}>
+                      <div style={{ height: 6, borderRadius: 3, background: "#e5e7eb", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${newsProgress}%`, background: "var(--nsib-navy)", borderRadius: 3, transition: "width 0.3s ease" }} />
+                      </div>
+                      <p style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.35rem", textAlign: "right" }}>{newsProgress}%</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </form>
           </div>
         )}
 
-        {/* Manage News */}
+        {/* Manage Press Releases */}
         {activeSection === "manage-news" && (
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h1 className={styles.pageTitle}>Manage News</h1>
+              <h1 className={styles.pageTitle}>Manage Press Releases</h1>
               {user?.role === "admin" && (
               <button className={styles.uploadTrigger} onClick={() => setActiveSection("news")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -1843,9 +1917,9 @@ export default function DashboardPage() {
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
                   <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
                 </svg>
-                <h3>No news articles yet</h3>
-                <p>{user?.role === "admin" ? "Post your first article to get started." : "No news articles have been published yet."}</p>
-                {user?.role === "admin" && <button className={styles.submitBtn} onClick={() => setActiveSection("news")}>Post News</button>}
+                <h3>No press releases yet</h3>
+                <p>{user?.role === "admin" ? "Post your first press release to get started." : "No press releases have been published yet."}</p>
+                {user?.role === "admin" && <button className={styles.submitBtn} onClick={() => setActiveSection("news")}>Post Press Release</button>}
               </div>
             ) : (
               <>
@@ -1867,6 +1941,7 @@ export default function DashboardPage() {
                     <div className={styles.dateCell}>{formatDate(n.published_at)}</div>
                     <div className={styles.dateCell}>{n.author_name}</div>
                     <div className={styles.actionCell}>
+                      {n.report_url && <a href={n.report_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.8rem", color: "var(--nsib-navy)", fontWeight: 600, marginRight: "0.75rem" }}>Report</a>}
                       {user?.role === "admin" && <button className={styles.deleteBtn} onClick={() => handleDeleteNews(n.id)}>Delete</button>}
                     </div>
                   </div>

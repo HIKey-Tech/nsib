@@ -23,11 +23,11 @@ export const teamMembers: TeamMember[] = [
   },
   {
     slug: "nwobu-nwabueze",
-    name: "Engr. Nwobu Nwabueze (MNSE)",
+    name: "Engr. Abdullahi Babanya",
     title: "Director, Transport Investigation",
     image: "/images/team/director_transport.jpg",
     bio: [
-      "Engr. Nwobu Nwabueze (MNSE) holds a B.Engr. (Hon) Mechanical Engineering, from the Federal University of Agriculture, Makurdi, and a Diploma in Aero Engineering from the prestigious Nigerian College of Aviation Technology (NCAT), Zaria.",
+      "Engr. Abdullahi Babanya holds a B.Engr. (Hon) Mechanical Engineering, from the Federal University of Agriculture, Makurdi, and a Diploma in Aero Engineering from the prestigious Nigerian College of Aviation Technology (NCAT), Zaria.",
       "He joined the Federal Ministry of Aviation (FMA) in 2006, from where he was appointed as the Principal Inspector of Accidents under the Accident Investigation and Prevention Bureau (AIPB), which was later transmuted to the now Nigerian Safety Investigation Bureau (NSIB).",
       "In the pursuit of his career, he bagged many professional certificates in trainings/courses such as Aircraft Maintenance Engineers license, Aircraft Accident Investigation Certificate, Private Pilot License (PPL) NCAT Zaria, Managerial skill improvement workshop, Helicopter Accident Investigation Course from the University of Southern California, the United Kingdom Airworthiness course, Emergency Management Workshop, Accra – Ghana, amongst many others.",
       "He was opportune to be the Investigator in Charge (IIC) in high profile Aircraft accident investigations such as; Investigations into air crashes of Bellview, ADC, Sosoliso airlines and many others. He drafted numerous Annex-13 preliminary and final reports which have been published and released to the public. He is also an ICAO certified instructor on teaching of Accident Investigation.",
@@ -65,11 +65,11 @@ export const teamMembers: TeamMember[] = [
   },
   {
     slug: "abdullahi-babanya",
-    name: "Engr. Abdullahi Baba Babanya (MNSE)",
+    name: "Engr Nwobu Patrick",
     title: "Director, Technical Services",
     image: "/images/team/Director_tech.jpg",
     bio: [
-      "Engr. Abdullahi Baba Babanya MNSE holds BEng & MSc in Aeronautical Engineering from the Riga Aviation University of Latvia since 1995.",
+      "Engr Nwobu Patrick holds BEng & MSc in Aeronautical Engineering from the Riga Aviation University of Latvia since 1995.",
       "Prior to his appointment to the position of a Director at the Nigerian Safety Investigation Bureau (NSIB), he served as the General Manager (Engineering) in the defunct Accident Investigation Bureau (now NSIB) since 2017. He is concurrently serving as the AIG Focal Point of the ICAO USOAP CMA for Nigeria. He is the pioneer Chairman of Banjul Accord Group Accident Investigation Agency (BAGAIA) Technical Committees (TC1 & TC2). He is an ICAO trained Instructor and Course Developer.",
       "In 2022–2023, he was seconded to assist the Republic of Sierra Leone in the establishment of a start-up Sierra Leone Aircraft Accident and Incident Investigation Bureau (SL-AAIIB), development of technical manuals and to guide the SL-AAIIB towards ICAO USOAP CMA audit which took place in May–June 2023.",
       "In the past 27+ years, he had the privilege of working as an Airline Engineer, Aircraft Engineering Instructor, Government Airworthiness Inspector, Airline Safety & Quality Manager and lastly Aircraft Accident Investigator.",

@@ -1,7 +1,7 @@
 import { pageMeta } from "@/lib/site";
 
 export const metadata = pageMeta({
-  title: "News & Press Releases",
+  title: "Press Release",
   description:
     "Latest news, announcements, safety alerts and press releases from the Nigerian Safety Investigation Bureau (NSIB).",
   path: "/news",

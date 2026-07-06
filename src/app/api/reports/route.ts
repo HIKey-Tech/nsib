@@ -77,7 +77,9 @@ export async function POST(request: NextRequest) {
     if (!sector || !VALID_SECTORS.has(sector)) {
       return NextResponse.json({ error: 'A valid sector is required' }, { status: 400 });
     }
-    if (!report_no || !String(report_no).trim()) {
+    // Preliminary reports are often filed before a report number has been assigned.
+    const isPreliminary = report_status === 'Preliminary Report';
+    if (!isPreliminary && (!report_no || !String(report_no).trim())) {
       return NextResponse.json({ error: 'Report No. is required' }, { status: 400 });
     }
     if (!occurrence) {
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
          RETURNING ${REPORT_FIELDS}`,
         [
-          String(report_no).trim(), sector, type || 'final', report_status ?? null, operator ?? null,
+          report_no && String(report_no).trim() ? String(report_no).trim() : null, sector, type || 'final', report_status ?? null, operator ?? null,
           reg_no ?? null, vehicle_type ?? null, train_name ?? null, occurrence, title,
           description ?? null, file_url, file_name ?? null, file_size ?? null,
           cover_image_url ?? null, releasedAt, status, payload.userId, payload.email,

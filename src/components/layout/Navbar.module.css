@@ -233,7 +233,7 @@
 /* ─── Logo scaling on small screens ─────────────────────────────────── */
 @media (max-width: 480px) {
   .logoContainer img {
-    max-width: 150px;
+    max-width: 190px;
   }
 }
 
@@ -263,11 +263,11 @@
   }
 
   .logoContainer img {
-    max-width: 150px;
+    max-width: 170px;
   }
 
   .header .headerInner {
-    padding: 0 1rem;
+    padding: 0 0.75rem;
   }
 }
 

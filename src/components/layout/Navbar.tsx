@@ -46,8 +46,8 @@ export default function Navbar() {
             <Image
               src="/nsib-logo-nobg-white-text.webp"
               alt="NSIB Logo"
-              width={220}
-              height={65}
+              width={270}
+              height={80}
               priority
               style={{ objectFit: 'contain' }}
             />

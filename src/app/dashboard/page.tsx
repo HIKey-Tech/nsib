@@ -11,7 +11,7 @@ type NewsCategory = "general" | "safety" | "aviation" | "maritime" | "railway" |
 
 interface Report {
   id: string;
-  report_no: string;
+  report_no: string | null;
   title: string;
   type: ReportType;
   sector: Sector;
@@ -761,8 +761,9 @@ export default function DashboardPage() {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isPreliminary = uploadStatus === "Preliminary Report";
     const missing = [
-      !uploadReportNo.trim() && "the report no.",
+      !isPreliminary && !uploadReportNo.trim() && "the report no.",
       !uploadOccurrence.trim() && "the occurrence",
       !uploadSector && "a transport sector",
       !uploadFile && "the report file",
@@ -798,7 +799,7 @@ export default function DashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          report_no: uploadReportNo.trim(),
+          report_no: uploadReportNo.trim() || null,
           sector: uploadSector,
           operator: uploadOperator,
           reg_no: uploadRegNo,
@@ -1472,10 +1473,12 @@ export default function DashboardPage() {
 
                 <div className={styles.formRight}>
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel} htmlFor="r-reportno">Report No. *</label>
+                    <label className={styles.formLabel} htmlFor="r-reportno">
+                      Report No. {uploadStatus === "Preliminary Report" ? <span style={{ fontWeight: 400, color: "#999" }}>(optional)</span> : "*"}
+                    </label>
                     <input id="r-reportno" type="text" className={styles.formInput}
                       placeholder="e.g. NSIB/AIR/2020/001"
-                      required value={uploadReportNo} onChange={e => setUploadReportNo(e.target.value)} />
+                      required={uploadStatus !== "Preliminary Report"} value={uploadReportNo} onChange={e => setUploadReportNo(e.target.value)} />
                   </div>
 
                   {uploadSector === "railway" && (

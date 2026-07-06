@@ -130,7 +130,7 @@ export default async function NewsDetailPage({
           {item.content ? (
             item.content.split("\n").map((para, i) =>
               para.trim() ? (
-                <p key={i} style={{ fontSize: "1.2rem", lineHeight: 1.85, color: "#2d3748", marginBottom: "1.75rem", fontWeight: 400 }}>
+                <p key={i} style={{ fontSize: "1.2rem", lineHeight: 1.85, color: "#2d3748", marginBottom: "1.75rem", fontWeight: 400, textAlign: "justify" }}>
                   {para}
                 </p>
               ) : null

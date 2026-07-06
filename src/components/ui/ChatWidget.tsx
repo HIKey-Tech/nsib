@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 
 type Message = {
   id: number;
   text: string;
   from: "user" | "bot";
   time: string;
+  href?: string;
+  label?: string;
 };
 
 const BOT_NAME = "Virtual Assistant";
@@ -21,21 +24,67 @@ function getTime() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function getBotReply(text: string): string {
+type BotReply = { text: string; href?: string; label?: string };
+
+function getBotReply(text: string): BotReply {
   const lower = text.toLowerCase();
   if (lower.includes("offering") || lower.includes("service")) {
-    return "NSIB investigates accidents and incidents involving air, marine, and rail transportation in Nigeria. Visit our Directorates page for more details.";
+    return {
+      text: "NSIB investigates accidents and incidents involving air, marine, and rail transportation in Nigeria.",
+      href: "/directorates", label: "View Directorates",
+    };
   }
   if (lower.includes("issue") || lower.includes("problem") || lower.includes("complaint")) {
-    return "I'm sorry to hear that. Please visit our Contact Us page or open a support ticket and our team will assist you promptly.";
+    return {
+      text: "I'm sorry to hear that. Please reach out and our team will assist you promptly.",
+      href: "/contact-us", label: "Contact Us",
+    };
   }
   if (lower.includes("report") || lower.includes("accident")) {
-    return "You can file an accident or incident report through our Reporting page. Would you like me to guide you there?";
+    return {
+      text: "You can file an accident or incident report through our Reporting page.",
+      href: "/reporting", label: "Report an Accident",
+    };
+  }
+  if (lower.includes("news") || lower.includes("press")) {
+    return {
+      text: "Catch up on our latest press releases and announcements.",
+      href: "/news", label: "Press Release",
+    };
+  }
+  if (lower.includes("publication") || lower.includes("document")) {
+    return {
+      text: "Browse our published investigation reports and documents.",
+      href: "/publications", label: "View Publications",
+    };
+  }
+  if (lower.includes("learn") || lower.includes("training") || lower.includes("course")) {
+    return {
+      text: "Explore courses and register for training through our Learning Portal.",
+      href: "/learning-portal", label: "Learning Portal",
+    };
+  }
+  if (lower.includes("vacan") || lower.includes("job") || lower.includes("career")) {
+    return {
+      text: "See current openings on our Vacancies page.",
+      href: "/vacancies", label: "View Vacancies",
+    };
+  }
+  if (lower.includes("what can this assistant")) {
+    return {
+      text: "I can point you to the right page — reporting an accident, press releases, publications, training, or contacting NSIB. Try one of the quick replies below or ask me directly.",
+    };
   }
   if (lower.includes("contact")) {
-    return "You can reach us via our Contact Us page, or call our operations centre directly. Is there anything else I can help with?";
+    return {
+      text: "You can reach us via our Contact Us page, or call our operations centre directly.",
+      href: "/contact-us", label: "Contact Us",
+    };
   }
-  return "Thank you for reaching out to NSIB. For specific enquiries, please visit our Contact Us page or call our helpline. How else can I assist you?";
+  return {
+    text: "Thank you for reaching out to NSIB. For specific enquiries, please visit our Contact Us page or call our helpline.",
+    href: "/contact-us", label: "Contact Us",
+  };
 }
 
 export default function ChatWidget() {
@@ -68,15 +117,18 @@ export default function ChatWidget() {
     setInput("");
 
     setTimeout(() => {
+      const reply = getBotReply(trimmed);
       const botMsg: Message = {
         id: Date.now() + 1,
-        text: getBotReply(trimmed),
+        text: reply.text,
+        href: reply.href,
+        label: reply.label,
         from: "bot",
         time: getTime(),
       };
       setMessages((prev) => [...prev, botMsg]);
       if (!open) setUnread((n) => n + 1);
-    }, 800);
+    }, 450);
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -111,6 +163,11 @@ export default function ChatWidget() {
                   {msg.text.split("\n").map((line, i) => (
                     <span key={i}>{line}{i < msg.text.split("\n").length - 1 && <br />}</span>
                   ))}
+                  {msg.href && msg.label && (
+                    <Link href={msg.href} onClick={() => setOpen(false)} style={styles.replyLink}>
+                      {msg.label} →
+                    </Link>
+                  )}
                 </div>
                 <span style={styles.timeLabel}>{msg.time}</span>
               </div>
@@ -119,15 +176,13 @@ export default function ChatWidget() {
           </div>
 
           {/* Quick replies */}
-          {messages.length <= 2 && (
-            <div style={styles.quickReplies}>
-              {QUICK_REPLIES.map((q) => (
-                <button key={q} style={styles.quickBtn} onClick={() => sendMessage(q)}>
-                  {q}
-                </button>
-              ))}
-            </div>
-          )}
+          <div style={styles.quickReplies}>
+            {QUICK_REPLIES.map((q) => (
+              <button key={q} style={styles.quickBtn} onClick={() => sendMessage(q)}>
+                {q}
+              </button>
+            ))}
+          </div>
 
           {/* Input */}
           <div style={styles.inputRow}>
@@ -169,8 +224,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: "fixed",
     bottom: 88,
     right: 24,
-    width: 320,
-    maxHeight: 480,
+    width: "min(320px, calc(100vw - 48px))",
+    maxHeight: "min(480px, calc(100dvh - 140px))",
     background: "#fff",
     borderRadius: 16,
     boxShadow: "0 20px 40px rgba(0,0,0,0.18)",
@@ -233,6 +288,14 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: "80%",
     boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
     lineHeight: 1.5,
+  },
+  replyLink: {
+    display: "flex",
+    marginTop: 8,
+    color: "var(--nsib-red)",
+    fontWeight: 700,
+    fontSize: 12.5,
+    textDecoration: "none",
   },
   bubbleUser: {
     background: "var(--nsib-red)",

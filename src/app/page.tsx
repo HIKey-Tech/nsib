@@ -334,10 +334,6 @@ export default function Home() {
                     <span>Sectors</span>
                   </div>
                   <div className={styles.statusMetric}>
-                    <strong>2022</strong>
-                    <span>Established</span>
-                  </div>
-                  <div className={styles.statusMetric}>
                     <strong>Abuja</strong>
                     <span>Headquarters</span>
                   </div>
@@ -482,12 +478,6 @@ export default function Home() {
           <ScrollReveal direction="right" delay={0.3} distance={40} className={styles.mandateImageGroup}>
             <div className={styles.imageMain}>
               <Image src="/images/operations_control_ng.png" alt="Operations Control Room" fill sizes="(max-width: 768px) 100vw, 50vw" className={styles.mandateImg} />
-            </div>
-            <div className={styles.imageOverlay}>
-              <div className={styles.statBox}>
-                <span className={styles.statNumber}>2022</span>
-                <span className={styles.statText}>Established by the <br />NSIB Act</span>
-              </div>
             </div>
           </ScrollReveal>
         </div>

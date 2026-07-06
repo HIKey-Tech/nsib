@@ -7,7 +7,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 
 export interface ReportRow {
   id: string;
-  report_no: string;
+  report_no: string | null;
   sector: string;
   report_status: string | null;
   operator: string | null;
@@ -231,7 +231,7 @@ export default function ReportsArchive({
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EEF2FF")}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = rowBg)}>
                       <TD muted>{(page - 1) * ITEMS_PER_PAGE + idx + 1}</TD>
-                      <TD mono>{r.report_no}</TD>
+                      <TD mono>{r.report_no || "—"}</TD>
                       {middleColumns.map((c) => <TD key={c.label} muted={c.muted} mono={c.mono}>{c.get(r) || "—"}</TD>)}
                       <TD>{r.occurrence || "—"}</TD>
                       <TD muted>{fmtDate(r.published_at)}</TD>

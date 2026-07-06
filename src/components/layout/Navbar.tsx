@@ -64,7 +64,8 @@ export default function Navbar() {
           <span className={styles.bar}></span>
         </button>
 
-        <nav className={`${styles.navLinks} ${mobileMenuOpen ? styles.mobileOpen : ''}`}>
+        <div className={`${styles.navWrap} ${mobileMenuOpen ? styles.mobileOpen : ''}`}>
+        <nav className={styles.navLinks}>
           <div className={styles.navItem}>
             <Link href="/">Home</Link>
           </div>
@@ -130,7 +131,9 @@ export default function Navbar() {
               <Link href="/contact-us" className={styles.dropdownLink}>Contact Us</Link>
             </div>
           </div>
+        </nav>
 
+        <div className={styles.navActions}>
           <Link href="/reporting" className={`btn btn-secondary ${styles.reportBtn}`}>Report Accident</Link>
 
           {isLoggedIn ? (
@@ -148,7 +151,8 @@ export default function Navbar() {
               Staff Email
             </a>
           )}
-        </nav>
+        </div>
+        </div>
       </div>
     </header>
   );

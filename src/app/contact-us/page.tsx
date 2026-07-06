@@ -181,7 +181,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <span style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>Emergency / Duty Officer</span>
-                    <p className="text-red" style={{ fontSize: '1.15rem', fontWeight: 600 }}>+234 807 709 0908 / 0909</p>
+                    <p className="text-red" style={{ fontSize: '1.15rem', fontWeight: 600 }}>+234 807 709 0908 / +234 807 709 0909</p>
                   </div>
                 </div>
               </div>

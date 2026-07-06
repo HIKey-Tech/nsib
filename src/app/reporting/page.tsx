@@ -195,7 +195,7 @@ export default function ReportingPage() {
                   If this is an active emergency requiring immediate assistance, please bypass this form.
                 </p>
                 <div style={{ background: 'rgba(226, 48, 48, 0.05)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(226, 48, 48, 0.1)' }}>
-                  <p className="text-red" style={{ margin: 0, fontWeight: 700, fontSize: '1.2rem', textAlign: 'center' }}>+234 807 709 0908 / 0909</p>
+                  <p className="text-red" style={{ margin: 0, fontWeight: 700, fontSize: '1.2rem', textAlign: 'center' }}>+234 807 709 0908 / +234 807 709 0909</p>
                 </div>
               </div>
             </ScrollReveal>

@@ -54,7 +54,7 @@ export default function ReportingGuidelinesPage() {
               delay
             </span>
           </div>
-          <span className={styles.emergencyNumber}>+234 807 709 0908 / 0909</span>
+          <span className={styles.emergencyNumber}>+234 807 709 0908 / +234 807 709 0909</span>
         </div>
       </div>
 

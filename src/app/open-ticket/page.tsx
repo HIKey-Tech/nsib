@@ -184,7 +184,7 @@ export default function OpenTicketPage() {
                 </div>
                 <div>
                   <span className={styles.infoListLabel}>Phone</span>
-                  <span className={styles.infoListValue}>+234 807 709 0908 / 0909</span>
+                  <span className={styles.infoListValue}>+234 807 709 0908 / +234 807 709 0909</span>
                 </div>
               </li>
             </ul>

@@ -188,6 +188,12 @@ ALTER TABLE news    ADD COLUMN IF NOT EXISTS report_url      TEXT;
 ALTER TABLE news    ADD COLUMN IF NOT EXISTS report_name     TEXT;
 ALTER TABLE news    ADD COLUMN IF NOT EXISTS report_size     BIGINT;
 
+-- Preliminary reports carry no report number (the UI shows the literal
+-- label "Preliminary Report" instead). Null out rows where users typed
+-- the label into report_no, so it stops colliding with the unique index.
+UPDATE reports SET report_no = NULL
+  WHERE report_status = 'Preliminary Report' AND report_no = 'Preliminary Report';
+
 -- Allow the "other" accident sector (older DBs have a 3-sector CHECK).
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_sector_check;
 ALTER TABLE reports ADD  CONSTRAINT reports_sector_check

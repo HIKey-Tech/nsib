@@ -45,33 +45,39 @@ async function makeReport(fields) {
   return r.data.report;
 }
 
-console.log('1. aviation report → auto report no 001');
-const air1 = await makeReport({ sector: 'aviation', operator: 'Allied Air', reg_no: '5N-ABC', vehicle_type: 'B737', occurrence: 'Runway Excursion', report_status: 'Final Report' });
+console.log('1. aviation report stores supplied report no');
+const air1 = await makeReport({ sector: 'aviation', report_no: `NSIB/AIR/${year}/001`, operator: 'Allied Air', reg_no: '5N-ABC', vehicle_type: 'B737', occurrence: 'Runway Excursion', report_status: 'Final Report' });
 assert(air1.report_no === `NSIB/AIR/${year}/001`, `air1 report_no = NSIB/AIR/${year}/001 (got ${air1.report_no})`);
 assert(air1.operator === 'Allied Air' && air1.reg_no === '5N-ABC' && air1.occurrence === 'Runway Excursion', 'air1 fields stored');
 
-console.log('2. second aviation → 002 (sequence increments)');
-const air2 = await makeReport({ sector: 'aviation', operator: 'Max Air', occurrence: 'Bird Strike', report_status: 'Preliminary Report' });
-assert(air2.report_no === `NSIB/AIR/${year}/002`, `air2 report_no = 002 (got ${air2.report_no})`);
+console.log('2. duplicate report no → 409');
+let up = await uploadFile(admin);
+let r = await post(admin, '/api/reports', { sector: 'aviation', report_no: `NSIB/AIR/${year}/001`, occurrence: 'Dup', report_status: 'Final Report', file_url: up.url });
+assert(r.status === 409, 'duplicate report no rejected');
 
-console.log('3. maritime → its own sequence 001');
-const mar1 = await makeReport({ sector: 'maritime', operator: 'NNPC Shipping', reg_no: 'IMO 9074729', vehicle_type: 'Tanker', occurrence: 'Grounding', report_status: 'Interim Statement' });
+console.log('3. preliminary reports: no report no, any number can coexist');
+const pre1 = await makeReport({ sector: 'aviation', report_no: 'Preliminary Report', operator: 'Max Air', occurrence: 'Bird Strike', report_status: 'Preliminary Report' });
+assert(pre1.report_no === null, 'typed label discarded → report_no null');
+const pre2 = await makeReport({ sector: 'aviation', operator: 'Air Peace', occurrence: 'Tail Strike', report_status: 'Preliminary Report' });
+assert(pre2.report_no === null, 'second preliminary saves without collision');
+
+console.log('4. maritime + railway fields stored');
+const mar1 = await makeReport({ sector: 'maritime', report_no: `NSIB/MAR/${year}/001`, operator: 'NNPC Shipping', reg_no: 'IMO 9074729', vehicle_type: 'Tanker', occurrence: 'Grounding', report_status: 'Interim Statement' });
 assert(mar1.report_no === `NSIB/MAR/${year}/001`, `mar1 report_no = NSIB/MAR/${year}/001 (got ${mar1.report_no})`);
-
-console.log('4. railway → own sequence + train_name');
-const rail1 = await makeReport({ sector: 'railway', train_name: 'Lagos–Ibadan Express', operator: 'NRC', reg_no: 'NRC-01', vehicle_type: 'Passenger', occurrence: 'Derailment', report_status: 'Safety Advisory' });
-assert(rail1.report_no === `NSIB/RAIL/${year}/001`, `rail1 report_no = NSIB/RAIL/${year}/001 (got ${rail1.report_no})`);
+const rail1 = await makeReport({ sector: 'railway', report_no: `NSIB/RAIL/${year}/001`, train_name: 'Lagos–Ibadan Express', operator: 'NRC', reg_no: 'NRC-01', vehicle_type: 'Passenger', occurrence: 'Derailment', report_status: 'Safety Advisory' });
 assert(rail1.train_name === 'Lagos–Ibadan Express', 'rail train_name stored');
 
 console.log('5. public list by sector (unauth) shows only that sector, published');
-let r = await get(jar(), '/api/reports?type=aviation');
-assert(r.status === 200 && r.data.reports.length === 2 && r.data.reports.every((x) => x.sector === 'aviation'), 'public aviation list = 2');
-assert(r.data.reports[0].report_no && r.data.reports[0].occurrence, 'public list carries report_no + occurrence');
+r = await get(jar(), '/api/reports?type=aviation');
+assert(r.status === 200 && r.data.reports.length === 3 && r.data.reports.every((x) => x.sector === 'aviation'), 'public aviation list = 3');
+assert(r.data.reports.some((x) => x.report_no) && r.data.reports.every((x) => x.occurrence), 'public list carries report_no + occurrence');
 
-console.log('6. missing occurrence → rejected');
-const up = await uploadFile(admin);
-r = await post(admin, '/api/reports', { sector: 'aviation', file_url: up.url });
+console.log('6. missing occurrence / missing report no (non-preliminary) → rejected');
+up = await uploadFile(admin);
+r = await post(admin, '/api/reports', { sector: 'aviation', report_no: 'X/1', file_url: up.url });
 assert(r.status === 400, 'report without occurrence rejected');
+r = await post(admin, '/api/reports', { sector: 'aviation', occurrence: 'No number', report_status: 'Final Report', file_url: up.url });
+assert(r.status === 400, 'non-preliminary report without report no rejected');
 
 console.log('7. download tracking → analytics');
 const vis = jar();

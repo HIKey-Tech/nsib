@@ -32,6 +32,10 @@ interface Report {
 
 const REPORT_STATUSES = ["Preliminary Report", "Interim Statement", "Final Report", "Safety Advisory"];
 
+// Preliminary reports have no report number — show the status label in its place.
+const reportNoLabel = (r: Pick<Report, "report_no" | "report_status">) =>
+  r.report_no || (r.report_status === "Preliminary Report" ? "Preliminary Report" : "—");
+
 interface Publication {
   id: string;
   title: string;
@@ -799,7 +803,7 @@ export default function DashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          report_no: uploadReportNo.trim() || null,
+          report_no: isPreliminary ? null : uploadReportNo.trim() || null,
           sector: uploadSector,
           operator: uploadOperator,
           reg_no: uploadRegNo,
@@ -824,8 +828,8 @@ export default function DashboardPage() {
 
       setUploadSuccess(
         user?.role === "admin"
-          ? `Report published successfully! Report No: ${reportData.report?.report_no || "assigned"}`
-          : `Report submitted for review! Report No: ${reportData.report?.report_no || "assigned"}. An admin will approve it before it appears on the website.`
+          ? `Report published successfully! Report No: ${reportData.report?.report_no || "Preliminary Report"}`
+          : `Report submitted for review! Report No: ${reportData.report?.report_no || "Preliminary Report"}. An admin will approve it before it appears on the website.`
       );
       setUploadFile(null);
       setUploadCover(null);
@@ -1474,11 +1478,14 @@ export default function DashboardPage() {
                 <div className={styles.formRight}>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel} htmlFor="r-reportno">
-                      Report No. {uploadStatus === "Preliminary Report" ? <span style={{ fontWeight: 400, color: "#999" }}>(optional)</span> : "*"}
+                      Report No. {uploadStatus === "Preliminary Report" ? <span style={{ fontWeight: 400, color: "#999" }}>(none for preliminary reports)</span> : "*"}
                     </label>
                     <input id="r-reportno" type="text" className={styles.formInput}
                       placeholder="e.g. NSIB/AIR/2020/001"
-                      required={uploadStatus !== "Preliminary Report"} value={uploadReportNo} onChange={e => setUploadReportNo(e.target.value)} />
+                      required={uploadStatus !== "Preliminary Report"}
+                      disabled={uploadStatus === "Preliminary Report"}
+                      value={uploadStatus === "Preliminary Report" ? "Preliminary Report" : uploadReportNo}
+                      onChange={e => setUploadReportNo(e.target.value)} />
                   </div>
 
                   {uploadSector === "railway" && (
@@ -1615,8 +1622,8 @@ export default function DashboardPage() {
                             <div key={r.id} className={styles.tableRow}>
                               <div className={styles.reportTitle}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                <span title={`${r.report_no} · ${r.occurrence || r.title}`}>
-                                  <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{r.report_no}</strong>
+                                <span title={`${reportNoLabel(r)} · ${r.occurrence || r.title}`}>
+                                  <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{reportNoLabel(r)}</strong>
                                   {" · "}{r.occurrence || r.title}
                                 </span>
                               </div>
@@ -1664,8 +1671,8 @@ export default function DashboardPage() {
                             <div key={r.id} className={styles.tableRow}>
                               <div className={styles.reportTitle}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                <span title={`${r.report_no} · ${r.occurrence || r.title}`}>
-                                  <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{r.report_no}</strong>
+                                <span title={`${reportNoLabel(r)} · ${r.occurrence || r.title}`}>
+                                  <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{reportNoLabel(r)}</strong>
                                   {" · "}{r.occurrence || r.title}
                                 </span>
                               </div>
@@ -1711,8 +1718,8 @@ export default function DashboardPage() {
                       <div key={r.id} className={styles.tableRow}>
                         <div className={styles.reportTitle}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                          <span title={`${r.report_no} · ${r.occurrence || r.title}`}>
-                            <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{r.report_no}</strong>
+                          <span title={`${reportNoLabel(r)} · ${r.occurrence || r.title}`}>
+                            <strong style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>{reportNoLabel(r)}</strong>
                             {" · "}{r.occurrence || r.title}
                           </span>
                         </div>
@@ -2507,7 +2514,7 @@ export default function DashboardPage() {
             onClick={e => e.stopPropagation()}
           >
             <h2 style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--nsib-navy)", marginBottom: "0.35rem" }}>Edit Report</h2>
-            <p style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "1.25rem", fontFamily: "monospace" }}>{editReport.report_no}</p>
+            <p style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "1.25rem", fontFamily: "monospace" }}>{reportNoLabel(editReport)}</p>
 
             {editError && <div className={styles.alertError} style={{ marginBottom: "1rem" }}>{editError}</div>}
 

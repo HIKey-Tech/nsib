@@ -123,7 +123,8 @@ export default function PublicationsArchive({
           const merged: PubRow[] = [
             ...(reps.reports || []).map((r: Record<string, string>) => ({
               id: r.id, title: r.occurrence || r.title, categoryLabel: SECTOR_LABEL[r.sector] || "Report",
-              reference: r.report_no || "-", date: r.published_at, status: r.report_status || "-", href: r.file_url, trackRefId: r.id,
+              reference: r.report_no || (r.report_status === "Preliminary Report" ? "Preliminary Report" : "-"),
+              date: r.published_at, status: r.report_status || "-", href: r.file_url, trackRefId: r.id,
             })),
             ...(news.news || []).map((n: Record<string, string>) => ({
               id: n.id, title: n.title, categoryLabel: "News", reference: "-", date: n.published_at,

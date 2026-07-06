@@ -104,7 +104,8 @@ export async function POST(request: NextRequest) {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
          RETURNING ${REPORT_FIELDS}`,
         [
-          report_no && String(report_no).trim() ? String(report_no).trim() : null, sector, type || 'final', report_status ?? null, operator ?? null,
+          // Preliminary reports never carry a number — NULLs bypass the unique index, so any count can coexist.
+          isPreliminary ? null : String(report_no).trim(), sector, type || 'final', report_status ?? null, operator ?? null,
           reg_no ?? null, vehicle_type ?? null, train_name ?? null, occurrence, title,
           description ?? null, file_url, file_name ?? null, file_size ?? null,
           cover_image_url ?? null, releasedAt, status, payload.userId, payload.email,

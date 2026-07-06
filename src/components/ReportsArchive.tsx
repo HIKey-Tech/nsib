@@ -231,7 +231,7 @@ export default function ReportsArchive({
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EEF2FF")}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = rowBg)}>
                       <TD muted>{(page - 1) * ITEMS_PER_PAGE + idx + 1}</TD>
-                      <TD mono>{r.report_no || "—"}</TD>
+                      <TD mono>{r.report_no || (r.report_status === "Preliminary Report" ? "Preliminary Report" : "—")}</TD>
                       {middleColumns.map((c) => <TD key={c.label} muted={c.muted} mono={c.mono}>{c.get(r) || "—"}</TD>)}
                       <TD>{r.occurrence || "—"}</TD>
                       <TD muted>{fmtDate(r.published_at)}</TD>

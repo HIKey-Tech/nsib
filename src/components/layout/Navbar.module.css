@@ -221,7 +221,41 @@
   }
 }
 
-@media (max-width: 1450px) {
+/* ─── Compact desktop nav for laptop widths ──────────────────────────────
+   Keeps the full horizontal nav (no hamburger) on typical laptop screens,
+   including ones running high display scaling that shrinks logical width
+   into the 1024-1650px range. Only real tablet/phone-width windows below
+   1024px fall back to the hamburger menu (see next block). */
+@media (max-width: 1650px) {
+  .navLinks {
+    gap: 0;
+  }
+
+  .navItem > a {
+    padding: 0.4rem 0.45rem;
+    font-size: 0.76rem;
+  }
+
+  .reportBtn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.68rem;
+  }
+
+  .loginBtn {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.68rem;
+  }
+
+  .logoContainer img {
+    max-width: 150px;
+  }
+
+  .header .headerInner {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 1024px) {
   .navLinks {
     position: absolute;
     top: 100%;

@@ -60,7 +60,7 @@
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
   letter-spacing: 0.02em;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
 }
 
 /* ─── CTA group (Report Accident / Staff Email) ─────────────────────────── */
@@ -249,7 +249,7 @@
 
   .navItem > a {
     padding: 0.4rem 0.45rem;
-    font-size: 0.76rem;
+    font-size: 0.82rem;
   }
 
   .reportBtn {

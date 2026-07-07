@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import SocialFeed from '@/components/ui/SocialFeed';
 import SocialFeedSection from '@/components/ui/SocialFeedSection';
 import Link from 'next/link';
 import styles from './page.module.css';
@@ -21,7 +22,10 @@ export default function SocialPage() {
         </div>
       </section>
 
-      {/* Live Feeds */}
+      {/* Curated posts uploaded via the staff portal */}
+      <SocialFeed showFilter />
+
+      {/* Official channels */}
       <SocialFeedSection />
 
       {/* Follow buttons for all 4 platforms */}

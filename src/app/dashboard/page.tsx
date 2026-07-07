@@ -119,6 +119,27 @@ const NEWS_CATEGORIES = [
   { value: "announcement", label: "Announcement" },
 ];
 
+interface SocialPost {
+  id: string;
+  platform: string;
+  url: string;
+  title: string | null;
+  description: string | null;
+  thumbnail_url: string | null;
+  published_at: string;
+  uploader_name: string;
+}
+
+const SOCIAL_PLATFORMS = [
+  { value: "twitter", label: "X (Twitter)" },
+  { value: "facebook", label: "Facebook" },
+  { value: "instagram", label: "Instagram" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "youtube", label: "YouTube" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "other", label: "Other" },
+];
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
@@ -256,7 +277,7 @@ export default function DashboardPage() {
   const [reportsPage, setReportsPage] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
   const [pubsPage, setPubsPage] = useState(1);
-  const [activeSection, setActiveSection] = useState<"overview" | "analytics" | "upload" | "reports" | "news" | "manage-news" | "events" | "publications" | "trainings" | "users">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "analytics" | "upload" | "reports" | "news" | "manage-news" | "events" | "social" | "publications" | "trainings" | "users">("overview");
 
   // Users management (admin only)
   const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -325,6 +346,22 @@ export default function DashboardPage() {
   const [eventSubmitting, setEventSubmitting] = useState(false);
   const [eventError, setEventError] = useState("");
   const [eventSuccess, setEventSuccess] = useState("");
+
+  // Social posts state
+  const [social, setSocial] = useState<SocialPost[]>([]);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [socialFetched, setSocialFetched] = useState(false);
+  const [socialPlatform, setSocialPlatform] = useState("twitter");
+  const [socialUrl, setSocialUrl] = useState("");
+  const [socialTitle, setSocialTitle] = useState("");
+  const [socialDescription, setSocialDescription] = useState("");
+  const [socialThumbFile, setSocialThumbFile] = useState<File | null>(null);
+  const [socialThumbPreview, setSocialThumbPreview] = useState("");
+  const [socialThumbUploading, setSocialThumbUploading] = useState(false);
+  const [socialSubmitting, setSocialSubmitting] = useState(false);
+  const [socialError, setSocialError] = useState("");
+  const [socialSuccess, setSocialSuccess] = useState("");
+  const socialThumbInputRef = useRef<HTMLInputElement>(null);
 
   // Trainings (Learning Portal)
   type Training = { id: string; title: string; description: string; venue: string; category: string; start_date: string; end_date: string | null; reg_count: string };
@@ -400,6 +437,82 @@ export default function DashboardPage() {
     }
     setEventSubmitting(false);
     setTimeout(() => setEventSuccess(""), 3000);
+  };
+
+  const fetchSocial = useCallback(async () => {
+    setSocialLoading(true);
+    try {
+      const res = await fetch("/api/social?limit=200");
+      const data = await res.json();
+      if (data.posts) setSocial(data.posts);
+    } catch (e) {
+      console.error("Failed to fetch social posts", e);
+    }
+    setSocialLoading(false);
+    setSocialFetched(true);
+  }, []);
+
+  const handleSocialThumbSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSocialThumbFile(file);
+    setSocialThumbPreview(URL.createObjectURL(file));
+  };
+
+  const handleSocialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!socialUrl.trim()) {
+      setSocialError("A post link is required.");
+      return;
+    }
+    setSocialSubmitting(true);
+    setSocialError("");
+    setSocialSuccess("");
+    try {
+      // Optional thumbnail — omitted rows fall back to the NSIB logo at render time.
+      let thumbnailUrl: string | null = null;
+      if (socialThumbFile) {
+        setSocialThumbUploading(true);
+        const fd = new FormData();
+        fd.append("file", socialThumbFile);
+        const imgRes = await fetch("/api/social/upload-image", { method: "POST", body: fd });
+        const imgData = await imgRes.json();
+        setSocialThumbUploading(false);
+        if (!imgRes.ok) throw new Error(imgData.error || "Thumbnail upload failed");
+        thumbnailUrl = imgData.url;
+      }
+
+      const res = await fetch("/api/social", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: socialPlatform,
+          url: socialUrl.trim(),
+          title: socialTitle || null,
+          description: socialDescription || null,
+          thumbnail_url: thumbnailUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to post");
+      setSocialSuccess("Social post published successfully!");
+      setSocialPlatform("twitter"); setSocialUrl(""); setSocialTitle(""); setSocialDescription("");
+      setSocialThumbFile(null); setSocialThumbPreview("");
+      if (socialThumbInputRef.current) socialThumbInputRef.current.value = "";
+      fetchSocial();
+      setTimeout(() => setSocialSuccess(""), 3000);
+    } catch (err) {
+      setSocialError(err instanceof Error ? err.message : "Submission failed");
+      setSocialThumbUploading(false);
+    }
+    setSocialSubmitting(false);
+  };
+
+  const handleDeleteSocial = async (id: string) => {
+    if (!confirm("Delete this social post? This cannot be undone.")) return;
+    const res = await fetch(`/api/social/${id}`, { method: "DELETE" });
+    if (res.ok) fetchSocial();
+    else alert("Delete failed");
   };
 
   // Upload form state
@@ -684,6 +797,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (activeSection === "trainings" && !trainingsFetched && !trainingsLoading) fetchTrainings();
   }, [activeSection, trainingsFetched, trainingsLoading, fetchTrainings]);
+
+  // Load social posts when that tab is opened (only once).
+  useEffect(() => {
+    if (activeSection === "social" && !socialFetched && !socialLoading) fetchSocial();
+  }, [activeSection, socialFetched, socialLoading, fetchSocial]);
 
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -1103,6 +1221,15 @@ export default function DashboardPage() {
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
             Publications
+          </button>
+          <button
+            className={`${styles.navItem} ${activeSection === "social" ? styles.navItemActive : ""}`}
+            onClick={() => setActiveSection("social")}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Social Media
           </button>
           {user?.role === "admin" && (
             <button
@@ -2110,6 +2237,125 @@ export default function DashboardPage() {
                 {eventSubmitting ? (eventFlyerUploading ? "Uploading flyer…" : "Publishing…") : "Publish Event"}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Social Media Section */}
+        {activeSection === "social" && (
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h1 className={styles.pageTitle}>Social Media</h1>
+              <p className={styles.pageDesc}>Add links to NSIB posts on social platforms. They appear on the public Social Feed and the home page.</p>
+            </div>
+
+            {socialSuccess && (
+              <div className={styles.successBanner}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {socialSuccess}
+              </div>
+            )}
+            {socialError && <div className={styles.errorBanner}>{socialError}</div>}
+
+            <form onSubmit={handleSocialSubmit} className={styles.newsForm}>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Platform *</label>
+                  <select className={styles.select} value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)}>
+                    {SOCIAL_PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Post Link *</label>
+                  <input type="url" className={styles.input} value={socialUrl} onChange={e => setSocialUrl(e.target.value)} placeholder="https://..." required />
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Title (optional)</label>
+                <input type="text" className={styles.input} value={socialTitle} onChange={e => setSocialTitle(e.target.value)} placeholder="e.g. NSIB commissions new investigation lab" />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Description (optional)</label>
+                <textarea className={styles.textarea} value={socialDescription} onChange={e => setSocialDescription(e.target.value)} rows={3} placeholder="A brief description shown on the card..." />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Thumbnail <span style={{ fontWeight: 400, textTransform: "none", color: "#999" }}>(optional — defaults to NSIB logo)</span></label>
+                <div
+                  className={styles.dropZone}
+                  style={{ minHeight: "110px", padding: "1rem", cursor: "pointer" }}
+                  onClick={() => socialThumbInputRef.current?.click()}
+                >
+                  <input
+                    ref={socialThumbInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className={styles.fileInput}
+                    onChange={handleSocialThumbSelect}
+                  />
+                  {socialThumbPreview ? (
+                    <div className={styles.fileSelected}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={socialThumbPreview} alt="thumbnail preview" style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "8px" }} />
+                      <button
+                        type="button"
+                        className={styles.fileRemove}
+                        onClick={e => { e.stopPropagation(); setSocialThumbFile(null); setSocialThumbPreview(""); if (socialThumbInputRef.current) socialThumbInputRef.current.value = ""; }}
+                      >
+                        Change image
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.dropZoneContent}>
+                      <div className={styles.dropIcon}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                      </div>
+                      <p className={styles.dropTitle}>Upload thumbnail</p>
+                      <p className={styles.dropSub}>Click to browse</p>
+                      <p className={styles.dropFormats}>JPEG, PNG, WebP · max 10 MB</p>
+                    </div>
+                  )}
+                </div>
+                {socialThumbUploading && (
+                  <p style={{ fontSize: "0.82rem", color: "var(--nsib-slate-light)", marginTop: "0.4rem" }}>Uploading thumbnail…</p>
+                )}
+              </div>
+
+              <button type="submit" className={styles.submitBtn} disabled={socialSubmitting || socialThumbUploading}>
+                {socialSubmitting ? (socialThumbUploading ? "Uploading thumbnail…" : "Publishing…") : "Publish Post"}
+              </button>
+            </form>
+
+            <div style={{ marginTop: "2rem" }}>
+              <h2 className={styles.sectionTitle}>Published Posts</h2>
+              {socialLoading ? (
+                <div className={styles.loadingInner}><div className={styles.loadingSpinner}></div><p>Loading…</p></div>
+              ) : social.length === 0 ? (
+                <p style={{ color: "#94a3b8", padding: "1rem 0" }}>No social posts added yet.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {social.map(p => (
+                    <div key={p.id} style={{ border: "1px solid #e5e8ef", borderRadius: "10px", padding: "0.9rem 1.1rem", background: "white", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.thumbnail_url || "/images/nsib-logo.png"} alt="" style={{ width: "56px", height: "56px", objectFit: p.thumbnail_url ? "cover" : "contain", borderRadius: "8px", background: "#f1f5f9", flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: "180px" }}>
+                        <div style={{ fontWeight: 700, color: "var(--nsib-navy)" }}>{p.title || p.url}</div>
+                        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.2rem", textTransform: "capitalize" }}>
+                          {SOCIAL_PLATFORMS.find(s => s.value === p.platform)?.label || p.platform} · {formatDate(p.published_at)}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <a className={styles.viewBtn} href={p.url} target="_blank" rel="noopener noreferrer">View</a>
+                        <button className={styles.deleteBtn} onClick={() => handleDeleteSocial(p.id)}>Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

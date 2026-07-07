@@ -64,6 +64,7 @@ export default function Footer() {
               <li><Link href="/about">About NSIB</Link></li>
               <li><Link href="/services">Our Services</Link></li>
               <li><Link href="/events">Upcoming Events</Link></li>
+              <li><Link href="/social">Social Feed</Link></li>
               <li><Link href="/publications">News & Publications</Link></li>
               <li><Link href="/learning-portal">Learning Portal</Link></li>
               <li><Link href="/vacancies">Careers</Link></li>

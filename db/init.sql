@@ -115,6 +115,26 @@ CREATE TABLE IF NOT EXISTS publications (
 CREATE INDEX IF NOT EXISTS publications_category_idx     ON publications (category);
 CREATE INDEX IF NOT EXISTS publications_published_at_idx ON publications (published_at DESC);
 
+-- Social posts — admin/staff-curated links to NSIB posts on social platforms
+CREATE TABLE IF NOT EXISTS social_posts (
+  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  platform      TEXT        NOT NULL
+                            CHECK (platform IN ('twitter','facebook','instagram','linkedin','youtube','tiktok','other')),
+  url           TEXT        NOT NULL,                -- link to the actual post
+  title         TEXT,
+  description   TEXT,
+  thumbnail_url TEXT,                                -- optional; UI falls back to NSIB logo
+  status        TEXT        NOT NULL DEFAULT 'published'
+                            CHECK (status IN ('draft', 'published', 'archived')),
+  published_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by    UUID        REFERENCES users(id) ON DELETE SET NULL,
+  uploader_name TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS social_posts_status_idx       ON social_posts (status);
+CREATE INDEX IF NOT EXISTS social_posts_published_at_idx ON social_posts (published_at DESC);
+
 -- Trainings — admin-created courses/trainings shown on the Learning Portal
 CREATE TABLE IF NOT EXISTS trainings (
   id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -205,3 +225,4 @@ CREATE OR REPLACE TRIGGER news_updated_at    BEFORE UPDATE ON news    FOR EACH R
 CREATE OR REPLACE TRIGGER events_updated_at  BEFORE UPDATE ON events  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER publications_updated_at BEFORE UPDATE ON publications FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER trainings_updated_at BEFORE UPDATE ON trainings FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE OR REPLACE TRIGGER social_posts_updated_at BEFORE UPDATE ON social_posts FOR EACH ROW EXECUTE FUNCTION set_updated_at();

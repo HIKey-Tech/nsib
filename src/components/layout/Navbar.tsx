@@ -102,6 +102,7 @@ export default function Navbar() {
             <Link href="/publications">News & Pubs <span className={styles.chevron}>▼</span></Link>
             <div className={styles.dropdown}>
               <Link href="/news" className={styles.dropdownLink}>Press Release</Link>
+              <Link href="/social" className={styles.dropdownLink}>Social Feed</Link>
               <Link href="/legislations" className={styles.dropdownLink}>Legislations</Link>
               <Link href="/mou" className={styles.dropdownLink}>MOU</Link>
               <Link href="/rail-reports" className={styles.dropdownLink}>Rail Accident Reports</Link>

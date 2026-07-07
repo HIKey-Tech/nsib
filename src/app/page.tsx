@@ -7,6 +7,7 @@ import styles from "./page.module.css";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import CalendarEventsSection from "@/components/ui/CalendarEventsSection";
 import SocialFeedSection from "@/components/ui/SocialFeedSection";
+import SocialFeed from "@/components/ui/SocialFeed";
 import { teamMembers } from "@/app/team/data";
 
 interface Report {
@@ -799,6 +800,7 @@ export default function Home() {
       <CalendarEventsSection events={displayEvents} />
 
       {/* ── 12. SOCIAL FEED ── */}
+      <SocialFeed limit={6} heading="On Social Media" seeAllHref="/social" />
       <SocialFeedSection compact />
 
       {/* ── 13. PARTNERS ── */}

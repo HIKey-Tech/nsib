@@ -114,18 +114,58 @@ export default function ReportsArchive({
   const opacityFade = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   const [reports, setReports] = useState<ReportRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [page, setPage] = useState(1);
 
+  // When no search/year filter is active, use server-side pagination.
+  // When a filter IS active, fetch all reports and filter client-side.
+  const isFiltering = search || yearFilter;
+
   useEffect(() => {
-    fetch(`/api/reports?type=${sector}&limit=500`)
-      .then((r) => r.json())
-      .then((data) => setReports(data.reports || []))
-      .catch(() => setReports([]))
-      .finally(() => setLoading(false));
-  }, [sector]);
+    setLoading(true);
+    if (!isFiltering) {
+      // Server-side pagination: fetch only the current page
+      fetch(`/api/reports?type=${sector}&limit=${ITEMS_PER_PAGE}&page=${page}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setReports(data.reports || []);
+          setTotal(data.total || 0);
+        })
+        .catch(() => { setReports([]); setTotal(0); })
+        .finally(() => setLoading(false));
+    } else {
+      // Client-side filtering: fetch all reports for this sector
+      let allReports: ReportRow[] = [];
+      let totalCount = 0;
+      const fetchAllPages = async () => {
+        try {
+          // Fetch first page to get total
+          const first = await fetch(`/api/reports?type=${sector}&limit=${ITEMS_PER_PAGE}&page=1`);
+          const firstData = await first.json();
+          totalCount = firstData.total || 0;
+          allReports = firstData.reports || [];
+          // Fetch remaining pages
+          const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+          for (let p = 2; p <= totalPages; p++) {
+            const res = await fetch(`/api/reports?type=${sector}&limit=${ITEMS_PER_PAGE}&page=${p}`);
+            const data = await res.json();
+            if (data.reports) allReports = allReports.concat(data.reports);
+          }
+          setReports(allReports);
+          setTotal(totalCount);
+        } catch {
+          setReports([]);
+          setTotal(0);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchAllPages();
+    }
+  }, [sector, page, isFiltering]);
 
   const years = useMemo(
     () => Array.from(new Set(reports.map((r) => new Date(r.published_at).getFullYear().toString()))).sort().reverse(),
@@ -133,6 +173,7 @@ export default function ReportsArchive({
   );
 
   const filtered = useMemo(() => {
+    if (!isFiltering) return reports;
     const q = search.toLowerCase();
     return reports
       .filter((r) => {
@@ -142,10 +183,14 @@ export default function ReportsArchive({
         return matchSearch && matchYear;
       })
       .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
-  }, [reports, search, yearFilter]);
+  }, [reports, search, yearFilter, isFiltering]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paged = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const totalPages = isFiltering
+    ? Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+    : Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+  const paged = isFiltering
+    ? filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+    : reports;
   const colCount = 4 + middleColumns.length; // S/N, Report No, ...middle, Occurrence, Date, Status, Download = 5 fixed + middle... (see header)
 
   const download = (r: ReportRow) => {
@@ -202,7 +247,7 @@ export default function ReportsArchive({
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <div style={{ marginLeft: "auto", fontSize: "0.85rem", color: "#64748B", whiteSpace: "nowrap" }}>
-            Showing <strong style={{ color: "#1B2A6B" }}>{paged.length}</strong> of <strong style={{ color: "#1B2A6B" }}>{filtered.length}</strong> records
+            Showing <strong style={{ color: "#1B2A6B" }}>{paged.length}</strong> of <strong style={{ color: "#1B2A6B" }}>{isFiltering ? filtered.length : total}</strong> records
           </div>
         </div>
 
@@ -247,7 +292,7 @@ export default function ReportsArchive({
                   );
                 }) : (
                   <tr><td colSpan={colCount + 3} style={{ padding: "4rem 2rem", textAlign: "center", color: "#94A3B8" }}>
-                    <div style={{ fontSize: "0.95rem" }}>{reports.length === 0 ? "No reports have been published in this category yet." : "No records match your search criteria."}</div>
+                    <div style={{ fontSize: "0.95rem" }}>{(!isFiltering && total === 0) ? "No reports have been published in this category yet." : "No records match your search criteria."}</div>
                   </td></tr>
                 )}
               </tbody>
@@ -260,9 +305,27 @@ export default function ReportsArchive({
               <span style={{ fontSize: "0.85rem", color: "#64748B" }}>Page {page} of {totalPages}</span>
               <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", border: "1.5px solid #E2E8F0", backgroundColor: "white", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.4 : 1, color: "#1B2A6B" }}><ChevronIcon dir="left" /></button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-                  <button key={n} onClick={() => setPage(n)} style={{ width: "36px", height: "36px", borderRadius: "8px", border: n === page ? "1.5px solid #1B2A6B" : "1.5px solid #E2E8F0", backgroundColor: n === page ? "#1B2A6B" : "white", color: n === page ? "white" : "#1B2A6B", fontSize: "0.85rem", fontWeight: n === page ? 700 : 500, cursor: "pointer" }}>{n}</button>
-                ))}
+                {(() => {
+                  const pages: (number | "ellipsis")[] = [];
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (page > 3) pages.push("ellipsis");
+                    const start = Math.max(2, page - 1);
+                    const end = Math.min(totalPages - 1, page + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (page < totalPages - 2) pages.push("ellipsis");
+                    pages.push(totalPages);
+                  }
+                  return pages.map((n, i) =>
+                    n === "ellipsis" ? (
+                      <span key={`e${i}`} style={{ width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8", fontSize: "0.85rem" }}>…</span>
+                    ) : (
+                      <button key={n} onClick={() => setPage(n)} style={{ width: "36px", height: "36px", borderRadius: "8px", border: n === page ? "1.5px solid #1B2A6B" : "1.5px solid #E2E8F0", backgroundColor: n === page ? "#1B2A6B" : "white", color: n === page ? "white" : "#1B2A6B", fontSize: "0.85rem", fontWeight: n === page ? 700 : 500, cursor: "pointer" }}>{n}</button>
+                    )
+                  );
+                })()}
                 <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", border: "1.5px solid #E2E8F0", backgroundColor: "white", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.4 : 1, color: "#1B2A6B" }}><ChevronIcon dir="right" /></button>
               </div>
             </div>

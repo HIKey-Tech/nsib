@@ -232,12 +232,28 @@ function Pager({ page, totalPages, onChange }: { page: number; totalPages: numbe
     background: active ? "#1B2A6B" : "white", color: active ? "white" : "#1B2A6B",
     fontWeight: active ? 700 : 500, fontSize: "0.85rem", cursor: "pointer",
   });
+  const pages: (number | "ellipsis")[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (page > 3) pages.push("ellipsis");
+    const start = Math.max(2, page - 1);
+    const end = Math.min(totalPages - 1, page + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (page < totalPages - 2) pages.push("ellipsis");
+    pages.push(totalPages);
+  }
   return (
     <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginTop: "1.25rem" }}>
       <button style={{ ...btn(false), opacity: page === 1 ? 0.4 : 1, cursor: page === 1 ? "not-allowed" : "pointer" }} disabled={page === 1} onClick={() => onChange(page - 1)}>‹</button>
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-        <button key={n} style={btn(n === page)} onClick={() => onChange(n)}>{n}</button>
-      ))}
+      {pages.map((n, i) =>
+        n === "ellipsis" ? (
+          <span key={`e${i}`} style={{ minWidth: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8", fontSize: "0.85rem" }}>…</span>
+        ) : (
+          <button key={n} style={btn(n === page)} onClick={() => onChange(n)}>{n}</button>
+        )
+      )}
       <button style={{ ...btn(false), opacity: page === totalPages ? 0.4 : 1, cursor: page === totalPages ? "not-allowed" : "pointer" }} disabled={page === totalPages} onClick={() => onChange(page + 1)}>›</button>
     </div>
   );
@@ -275,6 +291,12 @@ export default function DashboardPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [reportsPage, setReportsPage] = useState(1);
+  const [reportsTotal, setReportsTotal] = useState(0);
+
+  const handleReportsPageChange = (p: number) => {
+    setReportsPage(p);
+    fetchReports(p);
+  };
   const [newsPage, setNewsPage] = useState(1);
   const [pubsPage, setPubsPage] = useState(1);
   const [activeSection, setActiveSection] = useState<"overview" | "analytics" | "upload" | "reports" | "news" | "manage-news" | "events" | "social" | "publications" | "trainings" | "users">("overview");
@@ -581,28 +603,40 @@ export default function DashboardPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update report");
-      setReports(prev => prev.map(r => (r.id === editReport.id ? { ...r, ...data.report } : r)));
       setEditReport(null);
+      fetchReports(reportsPage);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Update failed");
     }
     setEditSaving(false);
   };
 
-  const fetchReports = useCallback(async () => {
+  const fetchReports = useCallback(async (pageNum: number = 1) => {
     setReportsLoading(true);
     try {
-      const res = await fetch("/api/reports?limit=100");
+      // Fetch current page for the manage table
+      const res = await fetch(`/api/reports?limit=${ROWS_PER_PAGE}&page=${pageNum}`);
       const data = await res.json();
       if (data.reports) {
         setReports(data.reports);
-        setStats({
-          total: data.reports.length,
-          aviation: data.reports.filter((r: Report) => r.sector === "aviation").length,
-          maritime: data.reports.filter((r: Report) => r.sector === "maritime").length,
-          railway: data.reports.filter((r: Report) => r.sector === "railway").length,
-        });
+        setReportsTotal(data.total || 0);
       }
+      // Fetch sector totals for stats (lightweight calls with limit=1)
+      const [allRes, airRes, marRes, railRes] = await Promise.all([
+        fetch("/api/reports?limit=1"),
+        fetch("/api/reports?type=aviation&limit=1"),
+        fetch("/api/reports?type=maritime&limit=1"),
+        fetch("/api/reports?type=railway&limit=1"),
+      ]);
+      const [allData, airData, marData, railData] = await Promise.all([
+        allRes.json(), airRes.json(), marRes.json(), railRes.json(),
+      ]);
+      setStats({
+        total: allData.total || 0,
+        aviation: airData.total || 0,
+        maritime: marData.total || 0,
+        railway: railData.total || 0,
+      });
     } catch (e) {
       console.error("Failed to fetch reports", e);
     }
@@ -776,7 +810,7 @@ export default function DashboardPage() {
         } else {
           setUser(data.user);
           setLoading(false);
-          fetchReports();
+          setReportsPage(1); fetchReports(1);
           fetchNews();
         }
       })
@@ -961,7 +995,7 @@ export default function DashboardPage() {
       setUploadStatus("Final Report");
       setUploadDate(new Date().toISOString().split("T")[0]);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      fetchReports();
+      setReportsPage(1); fetchReports(1);
       setTimeout(() => {
         setUploadSuccess("");
         setActiveSection("reports");
@@ -978,7 +1012,7 @@ export default function DashboardPage() {
     if (!confirm("Are you sure you want to delete this report? This cannot be undone.")) return;
     const res = await fetch(`/api/reports/${id}`, { method: "DELETE" });
     if (res.ok) {
-      fetchReports();
+      setReportsPage(1); fetchReports(1);
     } else {
       const data = await res.json();
       alert(data.error || "Delete failed");
@@ -988,7 +1022,7 @@ export default function DashboardPage() {
   const approveReport = async (id: string) => {
     const res = await fetch(`/api/reports/${id}`, { method: "PATCH" });
     if (res.ok) {
-      setReports(prev => prev.map(r => r.id === id ? { ...r, status: "published" } : r));
+      fetchReports(reportsPage);
     } else {
       const data = await res.json();
       alert(data.error || "Approve failed");
@@ -1104,9 +1138,9 @@ export default function DashboardPage() {
     );
   }
 
-  const reportsTotalPages = Math.max(1, Math.ceil(reports.length / ROWS_PER_PAGE));
+  const reportsTotalPages = Math.max(1, Math.ceil(reportsTotal / ROWS_PER_PAGE));
   const reportsPageC = Math.min(reportsPage, reportsTotalPages);
-  const pagedReports = reports.slice((reportsPageC - 1) * ROWS_PER_PAGE, reportsPageC * ROWS_PER_PAGE);
+  const pagedReports = reports;
 
   const newsTotalPages = Math.max(1, Math.ceil(news.length / ROWS_PER_PAGE));
   const newsPageC = Math.min(newsPage, newsTotalPages);
@@ -1814,7 +1848,7 @@ export default function DashboardPage() {
                             </div>
                           ))}
                         </div>
-                        <Pager page={reportsPageC} totalPages={reportsTotalPages} onChange={setReportsPage} />
+                        <Pager page={reportsPageC} totalPages={reportsTotalPages} onChange={handleReportsPageChange} />
                       </>
                     )}
                   </>
@@ -1881,7 +1915,7 @@ export default function DashboardPage() {
                       </div>
                     ))}
                   </div>
-                  <Pager page={reportsPageC} totalPages={reportsTotalPages} onChange={setReportsPage} />
+                  <Pager page={reportsPageC} totalPages={reportsTotalPages} onChange={handleReportsPageChange} />
                 </>
               )
             )}

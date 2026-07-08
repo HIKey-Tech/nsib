@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const sector = searchParams.get('type'); // filters by sector (aviation|maritime|railway)
   const page = clampInt(searchParams.get('page'), 1, 100_000);
-  const limit = clampInt(searchParams.get('limit'), 20, 100);
+  const limit = clampInt(searchParams.get('limit'), 20, 200);
   const offset = (page - 1) * limit;
 
   const token = getTokenFromCookie(request.headers.get('cookie'));

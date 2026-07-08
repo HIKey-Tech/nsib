@@ -119,10 +119,19 @@ export default function ReportsArchive({
   const [search, setSearch] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [allYears, setAllYears] = useState<string[]>([]);
 
   // When no search/year filter is active, use server-side pagination.
   // When a filter IS active, fetch all reports and filter client-side.
   const isFiltering = search || yearFilter;
+
+  // Fetch all distinct years for this sector (independent of pagination)
+  useEffect(() => {
+    fetch(`/api/reports/years?type=${sector}`)
+      .then((r) => r.json())
+      .then((data) => setAllYears(data.years || []))
+      .catch(() => setAllYears([]));
+  }, [sector]);
 
   useEffect(() => {
     setLoading(true);
@@ -167,10 +176,8 @@ export default function ReportsArchive({
     }
   }, [sector, page, isFiltering]);
 
-  const years = useMemo(
-    () => Array.from(new Set(reports.map((r) => new Date(r.published_at).getFullYear().toString()))).sort().reverse(),
-    [reports]
-  );
+  // Years are now fetched independently from /api/reports/years so the
+  // dropdown is not limited to the current page's records.
 
   const filtered = useMemo(() => {
     if (!isFiltering) return reports;
@@ -244,7 +251,7 @@ export default function ReportsArchive({
           <select value={yearFilter} onChange={(e) => { setYearFilter(e.target.value); setPage(1); }}
             style={{ padding: "0.7rem 1rem", border: "1.5px solid #E2E8F0", borderRadius: "8px", fontSize: "0.875rem", color: "#1E293B", backgroundColor: "white", cursor: "pointer", outline: "none" }}>
             <option value="">All Years</option>
-            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+            {allYears.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <div style={{ marginLeft: "auto", fontSize: "0.85rem", color: "#64748B", whiteSpace: "nowrap" }}>
             Showing <strong style={{ color: "#1B2A6B" }}>{paged.length}</strong> of <strong style={{ color: "#1B2A6B" }}>{isFiltering ? filtered.length : total}</strong> records

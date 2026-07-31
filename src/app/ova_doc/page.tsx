@@ -31,7 +31,7 @@ export default function DocumentLibraryPage() {
           <div style={{ maxWidth: "800px" }}>
             <h1 style={{ 
               color: 'white', 
-              fontSize: 'clamp(3rem, 5vw, 4.5rem)', 
+              fontSize: 'clamp(2rem, 5vw, 4.5rem)', 
               fontWeight: 800,
               lineHeight: 1.1,
               marginBottom: '1.5rem',
@@ -72,7 +72,8 @@ export default function DocumentLibraryPage() {
       <div className="glass-panel" style={{ padding: '2rem' }}>
         <input type="search" placeholder="Search documents..." style={{ width: '100%', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', marginBottom: '2rem' }} />
         
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '520px' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid var(--border-subtle)' }}>
               <th style={{ padding: '1rem' }} className="text-navy">Document Name</th>
@@ -96,6 +97,7 @@ export default function DocumentLibraryPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       </div>
     </main>

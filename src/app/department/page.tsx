@@ -29,7 +29,7 @@ export default function DepartmentPage() {
           <div style={{ maxWidth: "800px" }}>
             <h1 style={{ 
               color: 'white', 
-              fontSize: 'clamp(3rem, 5vw, 4.5rem)', 
+              fontSize: 'clamp(2rem, 5vw, 4.5rem)', 
               fontWeight: 800,
               lineHeight: 1.1,
               marginBottom: '1.5rem',
@@ -66,7 +66,7 @@ export default function DepartmentPage() {
       </section>
 
       <div className="container" style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <div className="glass-panel" style={{ padding: '2.5rem', marginTop: '2rem' }}>
+        <div className="glass-panel" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', marginTop: '2rem' }}>
           <h2 className="text-navy" style={{ marginBottom: '1rem' }}>Organizational Structure</h2>
           <p className="text-slate" style={{ marginBottom: '1.5rem' }}>
             The Bureau is headed by the Director General / CEO who reports directly to the Presidency through the Ministry of Aviation. The operational core is divided into specialized directorates for aviation, marine, and railway safety.

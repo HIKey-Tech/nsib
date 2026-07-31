@@ -74,6 +74,9 @@ button {
 /* Typography Scale */
 h1, h2, h3, h4, h5, h6 {
   color: var(--nsib-navy);
+  /* A single long word ("Understanding", "Recommendations") is wider than a
+     320px screen at hero sizes — break it rather than overflow the column. */
+  overflow-wrap: break-word;
 }
 
 h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
@@ -199,16 +202,20 @@ h4 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; }
 .responsive-grid-sidebar { display: grid; grid-template-columns: minmax(min(100%, 320px), 1fr) 2fr; gap: 3rem; }
 .responsive-grid-250 { display: grid; grid-template-columns: minmax(min(100%, 250px), 1fr) 1fr; gap: 3rem; }
 
+/* minmax(0, 1fr) rather than plain 1fr: a bare `1fr` track still has an
+   automatic min-content floor, so one nowrap child (a long select label, a
+   phone number) silently stretches the collapsed column past the viewport.
+   The explicit 0 minimum makes the track honour the container width instead. */
 @media (max-width: 1024px) {
   .responsive-grid-sidebar, .responsive-grid-250 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
   }
 }
 
 @media (max-width: 768px) {
   .responsive-grid-2col {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

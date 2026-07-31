@@ -180,7 +180,7 @@
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .heroInner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     min-height: unset;
   }
 
@@ -201,7 +201,7 @@
   }
 
   .bioInner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
   }
 
@@ -218,7 +218,7 @@
 
 @media (max-width: 560px) {
   .bioAside {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .heroName {

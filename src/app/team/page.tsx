@@ -73,7 +73,7 @@ export default function TeamPage() {
               </div>
               <h1 style={{ 
                 color: 'white', 
-                fontSize: 'clamp(3rem, 5vw, 4.5rem)', 
+                fontSize: 'clamp(2rem, 5vw, 4.5rem)', 
                 fontWeight: 800,
                 lineHeight: 1.1,
                 marginBottom: '1.5rem',
@@ -115,7 +115,7 @@ export default function TeamPage() {
         {teamMembers.length > 0 && (
           <FadeIn>
             <ScaleHover style={{ display: 'block', marginBottom: '3.5rem' }}>
-              <div className="glass-panel" style={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: 'minmax(280px, 420px) 1fr', gap: 0 }}>
+              <div className="glass-panel responsive-grid-sidebar" style={{ overflow: 'hidden', gap: 0 }}>
                 <div style={{ position: 'relative', minHeight: '420px', backgroundColor: 'var(--nsib-gray-100)' }}>
                   <Image
                     src={teamMembers[0].image}
@@ -126,7 +126,7 @@ export default function TeamPage() {
                     priority
                   />
                 </div>
-                <div style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <span style={{ display: 'inline-block', alignSelf: 'flex-start', padding: '0.35rem 0.9rem', backgroundColor: 'var(--nsib-red)', color: 'white', borderRadius: '30px', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
                     Director General
                   </span>
@@ -141,7 +141,7 @@ export default function TeamPage() {
         )}
 
         {/* Directors */}
-        <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2.5rem' }}>
+        <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '2.5rem' }}>
         {teamMembers.slice(1).map((member, idx) => (
           <StaggerItem key={idx}>
             <ScaleHover style={{ height: '100%' }}>

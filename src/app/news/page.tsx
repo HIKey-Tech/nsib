@@ -159,7 +159,7 @@ export default function NewsPage() {
   return (
     <main style={{ paddingBottom: "8rem", backgroundColor: "var(--bg-primary)", overflowX: "hidden" }}>
       {/* ── Hero ── */}
-      <section ref={containerRef} style={{
+      <section ref={containerRef} className="page-hero" style={{
         backgroundColor: "var(--nsib-navy)", color: "white",
         padding: "12rem 2rem 10rem", position: "relative",
         overflow: "hidden", marginBottom: "4rem", perspective: "1000px",
@@ -173,7 +173,7 @@ export default function NewsPage() {
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
           <div style={{ maxWidth: "800px" }}>
             <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-              style={{ color: "white", fontSize: "clamp(3.5rem, 6vw, 4.5rem)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1.5rem", textShadow: "0 20px 40px rgba(0,0,0,0.4)", letterSpacing: "-0.02em" }}>
+              style={{ color: "white", fontSize: "clamp(2rem, 6vw, 4.5rem)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1.5rem", textShadow: "0 20px 40px rgba(0,0,0,0.4)", letterSpacing: "-0.02em" }}>
               Press<br/>Release
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.4 }}
@@ -220,7 +220,7 @@ export default function NewsPage() {
           </div>
         ) : (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.75rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))", gap: "1.75rem" }}>
               {paged.map((n) => <NewsCard key={n.id} n={n} />)}
             </div>
 

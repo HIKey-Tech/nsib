@@ -296,7 +296,7 @@
 
 @media (max-width: 600px) {
   .footerGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.5rem;
   }
 

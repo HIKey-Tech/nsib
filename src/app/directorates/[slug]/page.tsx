@@ -35,7 +35,7 @@ export default async function DirectorateDetailPage({
           right: "-1rem",
           top: "50%",
           transform: "translateY(-50%)",
-          fontSize: "clamp(12rem, 22vw, 20rem)",
+          fontSize: "clamp(6rem, 22vw, 20rem)",
           fontWeight: 800,
           color: "rgba(27, 42, 107, 0.045)",
           lineHeight: 1,
@@ -69,10 +69,10 @@ export default async function DirectorateDetailPage({
             {/* Left accent bar + title block */}
             <div style={{
               borderLeft: `4px solid ${directorate.accent}`,
-              paddingLeft: "2.25rem",
+              paddingLeft: "clamp(1rem, 5vw, 2.25rem)",
             }}>
               {/* Tags row */}
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
                 <span style={{
                   fontSize: "0.78rem",
                   fontWeight: 700,
@@ -100,7 +100,7 @@ export default async function DirectorateDetailPage({
               </div>
 
               <h1 style={{
-                fontSize: "clamp(2.4rem, 4.5vw, 3.75rem)",
+                fontSize: "clamp(1.9rem, 4.5vw, 3.75rem)",
                 fontWeight: 800,
                 color: "var(--nsib-navy)",
                 lineHeight: 1.1,

@@ -132,7 +132,7 @@ export default function ReportingPage() {
             </div>
             <h1 style={{ 
               color: 'white', 
-              fontSize: 'clamp(3rem, 5vw, 4.5rem)', 
+              fontSize: 'clamp(2rem, 5vw, 4.5rem)', 
               fontWeight: 800,
               lineHeight: 1.1,
               marginBottom: '1.5rem',
@@ -167,7 +167,7 @@ export default function ReportingPage() {
               <div 
                 className="glass-panel"
                 style={{ 
-                  padding: '2.5rem', 
+                  padding: 'clamp(1.5rem, 4vw, 2.5rem)', 
                   transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease',
                   borderTop: '4px solid var(--nsib-red)',
                   background: 'rgba(255, 255, 255, 0.95)'
@@ -204,7 +204,7 @@ export default function ReportingPage() {
               <div 
                 className="glass-panel"
                 style={{ 
-                  padding: '2.5rem', 
+                  padding: 'clamp(1.5rem, 4vw, 2.5rem)', 
                   transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease',
                   borderTop: '4px solid var(--nsib-navy)'
                 }}
@@ -238,7 +238,7 @@ export default function ReportingPage() {
             <div 
               className="glass-panel" 
               style={{ 
-                padding: '3.5rem', 
+                padding: 'clamp(1.5rem, 5vw, 3.5rem)', 
                 borderRadius: '1.5rem', 
                 background: 'rgba(255,255,255,0.95)',
                 boxShadow: '0 30px 60px rgba(27, 42, 107, 0.08)',
@@ -256,7 +256,7 @@ export default function ReportingPage() {
                       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: 'var(--nsib-navy)', color: 'white', fontSize: '0.9rem', fontWeight: 700 }}>1</span>
                       Incident Modality
                     </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '1rem' }}>
                       
                       {['Aviation', 'Marine', 'Railway'].map((mode) => (
                         <div 
@@ -293,7 +293,7 @@ export default function ReportingPage() {
                       Incident Details
                     </h3>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1.5rem' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <label className="text-navy" style={{ fontWeight: 600, fontSize: '0.95rem' }}>Date of Occurrence</label>
                         <div style={{ position: 'relative' }} ref={datePickerRef}>
@@ -352,10 +352,10 @@ export default function ReportingPage() {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--nsib-navy)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                               </button>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', textAlign: 'center', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.25rem', textAlign: 'center', marginBottom: '0.5rem' }}>
                               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <span key={d} style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--nsib-slate)' }}>{d}</span>)}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', textAlign: 'center' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.25rem', textAlign: 'center' }}>
                               {blanks.map(b => <div key={`b-${b}`} />)}
                               {days.map(d => {
                                 const isSelected = selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === currentMonth.getMonth() && selectedDate.getFullYear() === currentMonth.getFullYear();

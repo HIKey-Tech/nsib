@@ -74,7 +74,7 @@ export default function AboutPage() {
             </div>
 
             <h1 style={{
-              fontSize: "clamp(2.6rem, 5vw, 4.5rem)",
+              fontSize: "clamp(2rem, 5vw, 4.5rem)",
               fontWeight: 800,
               color: "white",
               lineHeight: 1.1,
@@ -129,7 +129,7 @@ export default function AboutPage() {
               <div style={{
                 background: "white",
                 borderRadius: "var(--radius-lg)",
-                padding: "2.75rem",
+                padding: "clamp(1.5rem, 4vw, 2.75rem)",
                 boxShadow: "0 2px 16px rgba(27, 42, 107, 0.07)",
                 borderTop: "4px solid var(--nsib-red)",
                 height: "100%",
@@ -165,7 +165,7 @@ export default function AboutPage() {
               <div style={{
                 background: "white",
                 borderRadius: "var(--radius-lg)",
-                padding: "2.75rem",
+                padding: "clamp(1.5rem, 4vw, 2.75rem)",
                 boxShadow: "0 2px 16px rgba(27, 42, 107, 0.07)",
                 borderTop: "4px solid var(--nsib-navy)",
                 height: "100%",

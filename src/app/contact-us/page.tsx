@@ -65,7 +65,7 @@ export default function ContactPage() {
               </div>
               <h1 style={{ 
                 color: 'white', 
-                fontSize: 'clamp(3rem, 5vw, 4.5rem)', 
+                fontSize: 'clamp(2rem, 5vw, 4.5rem)', 
                 fontWeight: 800,
                 lineHeight: 1.1,
                 marginBottom: '1.5rem',
@@ -121,7 +121,7 @@ export default function ContactPage() {
               <div 
                 className="glass-panel contact-card"
                 style={{ 
-                  padding: '2.5rem', 
+                  padding: 'clamp(1.5rem, 4vw, 2.5rem)', 
                   transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease',
                   borderTop: '4px solid var(--nsib-navy)'
                 }}
@@ -153,7 +153,7 @@ export default function ContactPage() {
               <div 
                 className="glass-panel"
                 style={{ 
-                  padding: '2.5rem', 
+                  padding: 'clamp(1.5rem, 4vw, 2.5rem)', 
                   transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease',
                   borderTop: '4px solid var(--nsib-navy)'
                 }}
@@ -191,7 +191,7 @@ export default function ContactPage() {
               <div 
                 className="glass-panel"
                 style={{ 
-                  padding: '2.5rem', 
+                  padding: 'clamp(1.5rem, 4vw, 2.5rem)', 
                   transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease',
                   borderTop: '4px solid var(--nsib-navy)'
                 }}
@@ -235,7 +235,7 @@ export default function ContactPage() {
             <div 
               className="glass-panel" 
               style={{ 
-                padding: '3.5rem', 
+                padding: 'clamp(1.5rem, 5vw, 3.5rem)', 
                 borderRadius: '1.5rem', 
                 background: 'rgba(255,255,255,0.95)',
                 boxShadow: '0 30px 60px rgba(27, 42, 107, 0.08)',

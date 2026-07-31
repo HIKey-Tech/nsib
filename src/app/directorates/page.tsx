@@ -57,7 +57,7 @@ export default function DirectoratesPage() {
             </div>
 
             <h1 style={{
-              fontSize: "clamp(2.6rem, 5vw, 4.5rem)",
+              fontSize: "clamp(2rem, 5vw, 4.5rem)",
               fontWeight: 800,
               color: "white",
               lineHeight: 1.1,

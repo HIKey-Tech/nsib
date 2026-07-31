@@ -239,7 +239,7 @@ export default function EventDetailPage() {
           {/* Title */}
           <h1 style={{
             color: "white",
-            fontSize: "clamp(2rem, 4.5vw, 3.5rem)",
+            fontSize: "clamp(1.75rem, 4.5vw, 3.5rem)",
             fontWeight: 800,
             lineHeight: 1.1,
             marginBottom: "2rem",
@@ -508,7 +508,7 @@ export default function EventDetailPage() {
                 More {c.label} Events
               </h2>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "1.25rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))", gap: "1.25rem" }}>
               {related.map(rel => {
                 const rd = new Date(rel.event_date);
                 const rc = catMeta(rel.category);

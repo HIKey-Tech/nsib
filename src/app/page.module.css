@@ -199,7 +199,7 @@
 /* ── Title ── */
 .heroTitle {
   color: #FFFFFF;
-  font-size: clamp(2.4rem, 5.6vw, 5rem);
+  font-size: clamp(2rem, 5.6vw, 5rem);
   line-height: 0.98;
   font-weight: 700;
   margin: 0 0 1.75rem;
@@ -627,7 +627,7 @@
 ═══════════════════════════════════════ */
 @media (max-width: 1100px) {
   .heroLayout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.5rem;
   }
   .heroLeft {
@@ -1566,10 +1566,10 @@
 
 @media (max-width: 1024px) {
   .heroTitle { font-size: 4rem; }
-  .mandateGrid, .newsGrid { grid-template-columns: 1fr; gap: 4rem; }
+  .mandateGrid, .newsGrid { grid-template-columns: minmax(0, 1fr); gap: 4rem; }
   .sectorsGrid { grid-template-columns: repeat(2, 1fr); }
   .cardsGrid { grid-template-columns: repeat(2, 1fr); }
-  .dgGrid { grid-template-columns: 1fr; }
+  .dgGrid { grid-template-columns: minmax(0, 1fr); }
   .newsSection { padding: 5rem 0; }
   .quickAccess { grid-template-columns: repeat(3, 1fr); }
 }
@@ -1612,7 +1612,7 @@
     box-shadow: var(--shadow-md);
   }
 
-  .sectorsGrid, .cardsGrid { grid-template-columns: 1fr; }
+  .sectorsGrid, .cardsGrid { grid-template-columns: minmax(0, 1fr); }
   .sectorsSection { padding: 4.5rem 0 5.5rem; }
   .sectionHeaderCentered { margin-bottom: 3rem; }
   .sectionHeaderCentered h2, .sectionHeader h2 { font-size: 2rem; }
@@ -2844,24 +2844,24 @@
 ═══════════════════════════════════════ */
 @media (max-width: 1024px) {
   .bureauGrid { grid-template-columns: repeat(2, 1fr); }
-  .visionGrid { grid-template-columns: 1fr; }
-  .newsResourcesGrid { grid-template-columns: 1fr; }
+  .visionGrid { grid-template-columns: minmax(0, 1fr); }
+  .newsResourcesGrid { grid-template-columns: minmax(0, 1fr); }
   .resourcesPanel { position: static; }
-  .eventsLayout { grid-template-columns: 1fr; }
-  .dgGrid { grid-template-columns: 1fr; }
+  .eventsLayout { grid-template-columns: minmax(0, 1fr); }
+  .dgGrid { grid-template-columns: minmax(0, 1fr); }
   .dgLeft { max-width: 560px; margin: 0 auto; }
   .learningGrid { gap: 2rem; }
 }
 
 @media (max-width: 768px) {
-  .bureauGrid { grid-template-columns: 1fr; }
+  .bureauGrid { grid-template-columns: minmax(0, 1fr); }
   .bureauCard { aspect-ratio: 4/3; }
   .visionSection { padding: 4rem 0; }
-  .eventsGrid { grid-template-columns: 1fr; }
+  .eventsGrid { grid-template-columns: minmax(0, 1fr); }
   .managementSection { padding: 4rem 0; }
   .newsResourcesSection { padding: 4rem 0; }
   .eventsSection { padding: 4rem 0; }
-  .eventsLayout { grid-template-columns: 1fr; gap: 1.5rem; }
+  .eventsLayout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
   .eventsSectionHeader { flex-direction: column; align-items: flex-start; gap: 1rem; margin-bottom: 2rem; }
   .eventFeaturedInner { padding: 2rem 1.5rem; }
   .eventFeaturedDay { font-size: 4rem; }
@@ -2895,7 +2895,7 @@
   .dgQuote { font-size: 1.15rem; padding-left: 1.25rem; margin-top: 1.5rem; }
   .dgAttribution { padding-left: 1.25rem; }
   .learningSection { padding: 4rem 0; }
-  .learningGrid { grid-template-columns: 1fr; }
+  .learningGrid { grid-template-columns: minmax(0, 1fr); }
   .learningContent h2 { font-size: 2rem; }
   .partnersSection { padding: 3rem 0 2rem; }
   .partnersTitle { font-size: 1.4rem; margin-bottom: 1.75rem; }

@@ -117,7 +117,7 @@ export default function VacanciesPage() {
               </div>
               <h1 style={{ 
                 color: 'white', 
-                fontSize: 'clamp(3rem, 5vw, 4.5rem)', 
+                fontSize: 'clamp(2rem, 5vw, 4.5rem)', 
                 fontWeight: 800,
                 lineHeight: 1.1,
                 marginBottom: '1.5rem',

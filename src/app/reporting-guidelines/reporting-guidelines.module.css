@@ -92,7 +92,7 @@
 }
 
 .heroTitle {
-  font-size: clamp(3rem, 5vw, 4.5rem);
+  font-size: clamp(2rem, 5vw, 4.5rem);
   font-weight: 800;
   color: #ffffff;
   line-height: 1.1;
@@ -570,15 +570,15 @@
 /* ── Responsive ───────────────────────────── */
 @media (max-width: 640px) {
   .modesGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .detailsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .contactGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .legalCard {
@@ -603,11 +603,30 @@
   .cta {
     flex-direction: column;
     align-items: flex-start;
+    padding: 1.75rem 1.5rem;
+  }
+
+  /* The uppercase nowrap label is wider than the card's inner width once the
+     desktop side padding is applied — let it use the full column, and drop
+     nowrap so it still fits at 320px. */
+  .ctaBtn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 0.875rem 1rem;
+    white-space: normal;
   }
 
   .emergencyBannerInner {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  /* Both numbers on one nowrap line measure ~490px — wider than any phone.
+     Let the pair wrap at the spaces instead of overflowing the banner. */
+  .emergencyNumber {
+    white-space: normal;
+    font-size: 1.15rem;
   }
 }

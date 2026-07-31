@@ -48,7 +48,7 @@ export default function LearningPortal() {
             }}>
               NSIB LEARNING PORTAL
             </span>
-            <h1 style={{ color: "white", fontSize: "clamp(2.2rem,4.5vw,4rem)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1rem", maxWidth: "660px" }}>
+            <h1 style={{ color: "white", fontSize: "clamp(1.8rem,4.5vw,4rem)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1rem", maxWidth: "660px" }}>
               Learning Portal
             </h1>
             <p style={{ fontSize: "1.1rem", color: "rgba(255,255,255,0.7)", maxWidth: "540px", lineHeight: 1.7 }}>
@@ -56,7 +56,7 @@ export default function LearningPortal() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "3rem", marginTop: "3rem", animation: "fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.15s both" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "clamp(1.5rem, 7vw, 3rem)", marginTop: "3rem", animation: "fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.15s both" }}>
             {[
               { num: "3", label: "Core Courses" },
               { num: "✓", label: "Certification" },

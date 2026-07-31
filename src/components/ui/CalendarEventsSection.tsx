@@ -199,7 +199,7 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
             {/* Day-of-week headers */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(7, 1fr)",
+              gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
               background: "#f1f5f9",
               borderBottom: "1px solid var(--border-subtle)",
             }}>
@@ -219,7 +219,7 @@ export default function CalendarEventsSection({ events }: { events: CalendarEven
             </div>
 
             {/* Day grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "0.75rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", padding: "0.75rem" }}>
               {calendarDays.map((day, idx) => {
                 if (!day) {
                   return <div key={`empty-${idx}`} style={{ aspectRatio: "1" }} />;

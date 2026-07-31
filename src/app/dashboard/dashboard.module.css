@@ -787,7 +787,7 @@
 
 @media (max-width: 640px) {
   .formRow {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1083,7 +1083,7 @@
 
 @media (max-width: 900px) {
   .page {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sidebar {
@@ -1100,11 +1100,11 @@
   .sidebarFooter { border-top: none; flex-direction: row; align-items: center; }
 
   .formGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .actionCards {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1120,7 +1120,7 @@
 
   .tableHeader { display: none; }
   .tableRow {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.3rem;
     padding: 1rem;
   }
@@ -1257,6 +1257,6 @@
 
 @media (max-width: 900px) {
   .analyticsCols {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

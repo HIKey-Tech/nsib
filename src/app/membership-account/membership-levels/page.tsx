@@ -31,7 +31,7 @@ export default function MembershipLevelsPage() {
           <div style={{ maxWidth: "800px" }}>
             <h1 style={{ 
               color: 'white', 
-              fontSize: 'clamp(3rem, 5vw, 4.5rem)', 
+              fontSize: 'clamp(2rem, 5vw, 4.5rem)', 
               fontWeight: 800,
               lineHeight: 1.1,
               marginBottom: '1.5rem',
@@ -67,9 +67,9 @@ export default function MembershipLevelsPage() {
         `}} />
       </section>
 
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
+      <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
         {/* Tier 1 */}
-        <div className="glass-panel" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column' }}>
+        <div className="glass-panel" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', display: 'flex', flexDirection: 'column' }}>
           <h3 className="text-navy" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Observer</h3>
           <div className="text-red" style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1.5rem' }}>Free</div>
           <ul className="text-slate" style={{ flexGrow: 1, paddingLeft: '1.2rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -81,8 +81,10 @@ export default function MembershipLevelsPage() {
         </div>
 
         {/* Tier 2 */}
-        <div className="glass-panel" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', border: '2px solid var(--nsib-navy)', transform: 'scale(1.05)', zIndex: 10 }}>
-          <div style={{ backgroundColor: 'var(--nsib-navy)', color: 'white', textAlign: 'center', padding: '0.25rem', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginTop: '-2.5rem', marginLeft: '-2.5rem', marginRight: '-2.5rem', marginBottom: '1.5rem', borderTopLeftRadius: 'var(--radius-lg)', borderTopRightRadius: 'var(--radius-lg)' }}>Most Popular</div>
+        <div className="glass-panel" style={{ ['--tier-pad' as string]: 'clamp(1.5rem, 4vw, 2.5rem)', padding: 'var(--tier-pad)', display: 'flex', flexDirection: 'column', border: '2px solid var(--nsib-navy)', transform: 'scale(1.05)', zIndex: 10 }}>
+          {/* Bleeds to the card edges, so the negative margins must track the
+              card's own padding rather than assume the desktop value. */}
+          <div style={{ backgroundColor: 'var(--nsib-navy)', color: 'white', textAlign: 'center', padding: '0.25rem', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginTop: 'calc(-1 * var(--tier-pad))', marginLeft: 'calc(-1 * var(--tier-pad))', marginRight: 'calc(-1 * var(--tier-pad))', marginBottom: '1.5rem', borderTopLeftRadius: 'var(--radius-lg)', borderTopRightRadius: 'var(--radius-lg)' }}>Most Popular</div>
           <h3 className="text-navy" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Professional</h3>
           <div className="text-red" style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1.5rem' }}>₦50,000<span style={{fontSize: '1rem', color: 'var(--nsib-slate-light)'}}>/yr</span></div>
           <ul className="text-slate" style={{ flexGrow: 1, paddingLeft: '1.2rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -95,7 +97,7 @@ export default function MembershipLevelsPage() {
         </div>
 
         {/* Tier 3 */}
-        <div className="glass-panel" style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column' }}>
+        <div className="glass-panel" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', display: 'flex', flexDirection: 'column' }}>
           <h3 className="text-navy" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Corporate</h3>
           <div className="text-red" style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1.5rem' }}>Custom</div>
           <ul className="text-slate" style={{ flexGrow: 1, paddingLeft: '1.2rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

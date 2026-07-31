@@ -13,7 +13,7 @@
 
 .title {
   color: var(--nsib-navy);
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-size: clamp(2rem, 6vw, 4.5rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 1.5rem;
@@ -221,7 +221,7 @@
 
 @media (max-width: 900px) {
   .valuesGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

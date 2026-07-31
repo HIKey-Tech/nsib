@@ -92,7 +92,7 @@
 
 /* Large bold page title — left-aligned, anchored */
 .pageTitle {
-  font-size: clamp(3.5rem, 6vw, 6rem);
+  font-size: clamp(2.1rem, 6vw, 6rem);
   font-weight: 800;
   line-height: 0.95;
   color: white;
@@ -654,12 +654,12 @@
 
 @media (max-width: 768px) {
   .headerInner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.5rem;
   }
 
   .servicesGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .mandateCard {
@@ -667,12 +667,12 @@
   }
 
   .processTrack {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.5rem;
   }
 
   .ctaInner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.5rem;
     padding: 3rem 2rem;
   }

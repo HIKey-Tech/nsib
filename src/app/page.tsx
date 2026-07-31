@@ -131,7 +131,7 @@ function ManagementSlideshow() {
             </span>
             <h2>Our Management <em>Team</em></h2>
             <p className={styles.sectionSubtitle}>
-              Meet the management team of NSIB, appointed under the visionary leadership of <strong>President Bola Ahmed Tinubu</strong> through the Minister of Aviation, <strong>Festus Keyamo SAN</strong>, dedicated to advancing safety in aviation, maritime, and road transport.
+              Meet the management team of NSIB, appointed under the visionary leadership of <strong>President Bola Ahmed Tinubu</strong>, dedicated to advancing safety in aviation, maritime, and road transport.
             </p>
           </div>
         </ScrollReveal>

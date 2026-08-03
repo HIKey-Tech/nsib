@@ -49,6 +49,9 @@ export default function Navbar() {
               width={270}
               height={80}
               priority
+              // ponytail: /_next/image 504s on this file in prod; it's a 26KB
+              // webp, serve it raw. Drop once the optimizer stops choking on it.
+              unoptimized
               style={{ objectFit: 'contain' }}
             />
           </Link>

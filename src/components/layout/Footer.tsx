@@ -29,6 +29,7 @@ export default function Footer() {
                 alt="NSIB Logo"
                 width={220}
                 height={65}
+                unoptimized
                 style={{ objectFit: 'contain' }}
               />
             </div>

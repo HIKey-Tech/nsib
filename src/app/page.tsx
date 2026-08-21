@@ -109,7 +109,7 @@ function PartnersSlideshow() {
         <div className={styles.partnersMarquee}>
           {[...PARTNERS, ...PARTNERS].map((p, i) => (
             <div className={styles.partnerLogo} key={i}>
-              <Image src={p.src} alt={p.alt} width={150} height={90} style={{ objectFit: "contain" }} unoptimized />
+              <Image src={p.src} alt={p.alt} width={150} height={90} style={{ objectFit: "contain" }} loading="eager" unoptimized />
             </div>
           ))}
         </div>
@@ -147,6 +147,9 @@ function ManagementSlideshow() {
                     fill
                     className={styles.mgmtImage}
                     sizes="320px"
+                    // ponytail: the marquee moves by CSS transform, which never re-triggers
+                    // Chrome's lazy-load check — off-screen cards stayed blank forever.
+                    loading="eager"
                   />
                   <div className={styles.mgmtImageOverlay} />
                   <div className={styles.mgmtHoverInfo}>

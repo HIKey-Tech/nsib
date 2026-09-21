@@ -154,9 +154,7 @@ export default function AboutPage() {
                   lineHeight: 1.85,
                   fontSize: "1rem",
                 }}>
-                  To independently investigate transport accidents and serious incidents,
-                  determine probable causes, and issue safety recommendations to prevent
-                  recurrence across Nigeria's transport network.
+                  To carry out a qualitative and timely investigation with competent transportation professionals applying best practices.
                 </p>
               </div>
             </StaggerItem>
@@ -190,9 +188,7 @@ export default function AboutPage() {
                   lineHeight: 1.85,
                   fontSize: "1rem",
                 }}>
-                  To be an independent, world-class multi-modal transport safety
-                  investigation agency — setting the standard for safety governance
-                  across Africa and beyond.
+                  To be one of the foremost accident investigation bodies in the world striving towards improved aviation, marine, rail and road transportation safety.
                 </p>
               </div>
             </StaggerItem>

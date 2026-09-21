@@ -498,9 +498,9 @@ export default function Home() {
                 </svg>
               </div>
               <span className={styles.visionTag}>Our Vision</span>
-              <h3>A World-Class Safety Investigation Agency</h3>
+              <h3>Foremost Accident Investigation Body</h3>
               <p>
-                To be a world-class safety investigation agency committed to preventing transportation accidents and incidents in Nigeria through independent, objective, and thorough investigations that produce robust safety recommendations.
+                To be one of the foremost accident investigation bodies in the world striving towards improved aviation, marine, rail and road transportation safety.
               </p>
             </ScrollReveal>
 
@@ -511,9 +511,9 @@ export default function Home() {
                 </svg>
               </div>
               <span className={styles.visionTag}>Our Mission</span>
-              <h3>Safety Through Independence &amp; Integrity</h3>
+              <h3>Qualitative &amp; Timely Investigations</h3>
               <p>
-                To conduct independent, objective, and thorough investigations into transportation accidents and serious incidents in Nigeria, producing safety recommendations that address systemic deficiencies and prevent future occurrences across aviation, maritime, and railway sectors.
+                To carry out a qualitative and timely investigation with competent transportation professionals applying best practices.
               </p>
             </ScrollReveal>
           </div>

@@ -538,17 +538,19 @@ export default function Home() {
             <div className={styles.dgVideoWrap}>
               <div className={styles.dgVideoLabel}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.52V8.48L15.5 12l-5.75 3.52z" /></svg>
-                Assumption of Office
+                NSIB on YouTube
               </div>
-              <div className={styles.dgVideoFrame}>
-                <iframe
-                  src="https://www.youtube.com/embed/4IZTZ63748Q"
-                  title="Capt. Alex Badeh Jr. Assumption of Office as NSIB Director General"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{ border: "none", width: "100%", height: "100%", borderRadius: "12px" }}
-                />
-              </div>
+              <a
+                href="https://www.youtube.com/@nsibonline"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${styles.dgVideoFrame} ${styles.dgChannelLink}`}
+                aria-label="Visit the NSIB YouTube channel (opens in a new tab)"
+              >
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.52V8.48L15.5 12l-5.75 3.52z" /></svg>
+                <span className={styles.dgChannelTitle}>Watch NSIB on YouTube</span>
+                <span className={styles.dgChannelHandle}>@nsibonline</span>
+              </a>
             </div>
           </ScrollReveal>
 

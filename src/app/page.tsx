@@ -7,6 +7,7 @@ import styles from "./page.module.css";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import CalendarEventsSection from "@/components/ui/CalendarEventsSection";
 import SocialFeedSection from "@/components/ui/SocialFeedSection";
+import LatestSafetyRecommendations from "@/components/ui/LatestSafetyRecommendations";
 import SocialFeed from "@/components/ui/SocialFeed";
 import { teamMembers } from "@/app/team/data";
 
@@ -800,6 +801,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── 10b. SAFETY RECOMMENDATIONS (from the separate OSR app; hides itself if unavailable) ── */}
+      <LatestSafetyRecommendations />
 
       {/* ── 11. UPCOMING EVENTS ── */}
       <CalendarEventsSection events={displayEvents} />

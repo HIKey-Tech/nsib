@@ -19,6 +19,15 @@
 - Schedule `scripts/backup.sh` (cron) and test a restore once.
 - Cap request body size at the proxy (e.g. nginx `client_max_body_size 100m`) to match the app's 100MB upload cap.
 
+## Office of Safety Recommendations (separate app)
+
+The Office of Safety Recommendations is a **separate application** (its own repo `nsib-osr`, Docker stack, database
+and logins) that shares this domain. The VPS web server routes `/safety-recommendations`, `/osr`, `/osr-portal`,
+`/api/osr` and `/osr-assets` to it and everything else to this website — see `nsib-osr/docs/DEPLOY.md` and its
+`deploy/Caddyfile.example` / `deploy/nginx.conf.example`. This site only links to it (menu, footer, homepage block,
+"N safety recs" beside reports, via the OSR's public API); if the OSR is down those pieces hide themselves.
+Optional fallback: build this app with `OSR_APP_URL=http://<host>:3001` to forward those paths itself.
+
 ## First boot
 
 1. Run `db/init.sql` against the production DB — it is the single schema file, idempotent,

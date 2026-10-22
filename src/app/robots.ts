@@ -7,9 +7,10 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // Keep the admin CMS, auth flow and API surface out of search results.
-      disallow: ['/dashboard', '/login', '/api/', '/open-ticket', '/help-desk'],
+      disallow: ['/dashboard', '/login', '/osr', '/osr-portal', '/api/', '/open-ticket', '/help-desk'],
     },
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    // /osr-sitemap.xml comes from the separate Office of Safety Recommendations app on this domain
+    sitemap: [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/osr-sitemap.xml`],
     host: SITE_URL,
   };
 }

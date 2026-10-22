@@ -21,6 +21,11 @@ const ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: '/marine-reports', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/rail-reports', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/news', priority: 0.8, changeFrequency: 'daily' },
+  // Safety recommendations section — served by the separate OSR app; it publishes its own /osr-sitemap.xml
+  { path: '/safety-recommendations', priority: 0.9, changeFrequency: 'daily' },
+  { path: '/safety-recommendations/watchlist', priority: 0.7, changeFrequency: 'weekly' },
+  { path: '/safety-recommendations/dashboard', priority: 0.6, changeFrequency: 'weekly' },
+  { path: '/safety-recommendations/open-data', priority: 0.4, changeFrequency: 'yearly' },
   { path: '/event', priority: 0.6, changeFrequency: 'weekly' },
   { path: '/reporting', priority: 0.7, changeFrequency: 'yearly' },
   { path: '/reporting-guidelines', priority: 0.7, changeFrequency: 'yearly' },

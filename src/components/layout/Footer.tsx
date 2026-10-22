@@ -80,6 +80,7 @@ export default function Footer() {
             <ul className={styles.linkList}>
               <li><Link href="/reporting">Report an Accident</Link></li>
               <li><Link href="/investigations">Ongoing Investigations</Link></li>
+              <li><a href="/safety-recommendations">Safety Recommendations</a></li>
               <li><Link href="/operations-centre">Operations Centre</Link></li>
               <li><Link href="/flight-track">Flight Tracker</Link></li>
               <li><Link href="/vessel-tracking">Vessel Tracker</Link></li>

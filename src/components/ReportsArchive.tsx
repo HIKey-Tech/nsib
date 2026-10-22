@@ -120,6 +120,9 @@ export default function ReportsArchive({
   const [yearFilter, setYearFilter] = useState("");
   const [page, setPage] = useState(1);
   const [allYears, setAllYears] = useState<string[]>([]);
+  // Published safety recommendations per report, from the separate Office of Safety Recommendations app.
+  // Best-effort: if that app is unreachable the links simply don't appear.
+  const [recCounts, setRecCounts] = useState<Record<string, number>>({});
 
   // When no search/year filter is active, use server-side pagination.
   // When a filter IS active, fetch all reports and filter client-side.
@@ -175,6 +178,15 @@ export default function ReportsArchive({
       fetchAllPages();
     }
   }, [sector, page, isFiltering]);
+
+  useEffect(() => {
+    const nos = reports.map((r) => r.report_no).filter((n): n is string => !!n);
+    if (!nos.length) return;
+    fetch(`/api/osr/public/report-counts?report_nos=${encodeURIComponent(nos.join(","))}`)
+      .then((r) => (r.ok ? r.json() : { counts: {} }))
+      .then((d) => setRecCounts((prev) => ({ ...prev, ...(d.counts ?? {}) })))
+      .catch(() => {});
+  }, [reports]);
 
   // Years are now fetched independently from /api/reports/years so the
   // dropdown is not limited to the current page's records.
@@ -270,7 +282,7 @@ export default function ReportsArchive({
                   <TH>Occurrence</TH>
                   <TH width="110px">Date Released</TH>
                   <TH width="140px">Status</TH>
-                  <TH width="80px">Download</TH>
+                  <TH width="110px">Download</TH>
                 </tr>
               </thead>
               <tbody>
@@ -294,6 +306,11 @@ export default function ReportsArchive({
                           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#E23030"; e.currentTarget.style.transform = "none"; }}>
                           <DownloadIcon />PDF
                         </button>
+                        {!!(r.report_no && recCounts[r.report_no]) && (
+                          <a href={`/safety-recommendations?report_no=${encodeURIComponent(r.report_no!)}`} style={{ display: "block", marginTop: "0.4rem", fontSize: "0.72rem", fontWeight: 700, color: "#1B2A6B", textDecoration: "underline", whiteSpace: "nowrap" }}>
+                            {recCounts[r.report_no!]} safety rec{recCounts[r.report_no!] === 1 ? "" : "s"}
+                          </a>
+                        )}
                       </td>
                     </tr>
                   );

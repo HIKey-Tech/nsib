@@ -6,6 +6,7 @@ import {
 } from '@/lib/auth';
 import { verifyTotp, hashBackupCode } from '@/lib/totp';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
+import { isLocked, registerFailure, clearFailures } from '@/lib/lockout';
 
 // POST /api/auth/2fa/verify — second-factor check at login. Accepts a TOTP code or a backup code.
 export async function POST(request: NextRequest) {
@@ -23,11 +24,14 @@ export async function POST(request: NextRequest) {
   const { code } = await request.json();
   if (!code) return NextResponse.json({ error: 'Code is required' }, { status: 400 });
 
-  const rows = await query<{ totp_secret: string | null; backup_codes: string[] }>(
-    'SELECT totp_secret, backup_codes FROM users WHERE id = $1 AND totp_enabled = true LIMIT 1',
+  const rows = await query<{ totp_secret: string | null; backup_codes: string[]; locked_until: string | null }>(
+    'SELECT totp_secret, backup_codes, locked_until FROM users WHERE id = $1 AND totp_enabled = true LIMIT 1',
     [payload.userId]
   );
   const user = rows[0];
+  if (isLocked(user)) {
+    return NextResponse.json({ error: 'Account temporarily locked after repeated failed sign-ins. Try again in 15 minutes.' }, { status: 423 });
+  }
   if (!user?.totp_secret) {
     return NextResponse.json({ error: 'Two-factor is not set up' }, { status: 400 });
   }
@@ -45,8 +49,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!ok) {
+    await registerFailure('users', payload.userId);
     return NextResponse.json({ error: 'Invalid code. Try again.' }, { status: 400 });
   }
+  await clearFailures('users', payload.userId);
 
   const session = await signToken({ userId: payload.userId, email: payload.email, role: payload.role });
   const response = NextResponse.json({ ok: true });

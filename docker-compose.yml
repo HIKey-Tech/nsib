@@ -4,7 +4,10 @@
 #   admin :  docker compose exec app node scripts/create-admin.mjs <email> <pw> <name>
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        OSR_APP_URL: ${OSR_APP_URL:-}   # e.g. http://host.docker.internal:3001 — leave empty if the web server does the routing
     restart: unless-stopped
     env_file: .env
     environment:

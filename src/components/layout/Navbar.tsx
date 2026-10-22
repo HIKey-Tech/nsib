@@ -115,6 +115,9 @@ export default function Navbar() {
               <Link href="/investigation-forms-and-checklists" className={styles.dropdownLink}>Forms and Checklists</Link>
               <Link href="/investigation-manuals" className={styles.dropdownLink}>Investigation Manuals</Link>
               <Link href="/foi" className={styles.dropdownLink}>FOI</Link>
+              {/* These pages belong to the separate OSR app, so they must be full page loads, not client-side <Link>s */}
+              <a href="/safety-recommendations" className={styles.dropdownLink}>Safety Recommendations</a>
+              <a href="/safety-recommendations/watchlist" className={styles.dropdownLink}>Safety Watchlist</a>
             </div>
           </div>
 

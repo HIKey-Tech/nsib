@@ -3,6 +3,7 @@ import { query } from '@/lib/db';
 import { signPreAuthToken, PRE_COOKIE, preCookieOptions } from '@/lib/auth';
 import { verifyPassword } from '@/lib/password';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
+import { isLocked, registerFailure } from '@/lib/lockout';
 
 export async function POST(request: NextRequest) {
   // Brute-force guard: 10 attempts per 15 minutes per IP.
@@ -21,14 +22,19 @@ export async function POST(request: NextRequest) {
 
     const rows = await query<{
       id: string; email: string; full_name: string; role: string;
-      password_hash: string; totp_enabled: boolean;
+      password_hash: string; totp_enabled: boolean; locked_until: string | null;
     }>(
-      'SELECT id, email, full_name, role, password_hash, totp_enabled FROM users WHERE email = $1 LIMIT 1',
+      'SELECT id, email, full_name, role, password_hash, totp_enabled, locked_until FROM users WHERE email = $1 LIMIT 1',
       [email]
     );
     const user = rows[0];
 
+    if (isLocked(user)) {
+      return NextResponse.json({ error: 'Account temporarily locked after repeated failed sign-ins. Try again in 15 minutes.' }, { status: 423 });
+    }
+
     if (!user || !verifyPassword(password, user.password_hash)) {
+      if (user) await registerFailure('users', user.id);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 

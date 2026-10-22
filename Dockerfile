@@ -5,6 +5,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Optional: forward the Office of Safety Recommendations paths to the separate OSR app from inside this app
+# (the alternative is routing them in the VPS web server). Baked in at build time — see next.config.ts.
+ARG OSR_APP_URL=
+ENV OSR_APP_URL=$OSR_APP_URL
 # auth.ts refuses to load without JWT_SECRET in production — satisfy it for the
 # build's page-data collection only. Not baked in: the runtime stage doesn't set
 # it, so the real guard still fires if the deployment forgets the secret.

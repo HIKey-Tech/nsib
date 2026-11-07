@@ -80,3 +80,25 @@ a.card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 /* grid children must be allowed to shrink, or a long code line stretches the whole panel on phones */
 .grid2 > *, .detailGrid > * { min-width: 0; }
 .code { max-width: 100%; white-space: pre; }
+
+/* register cards: dates line and safety-theme labels */
+.dates { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; margin-top: .7rem; font-size: .8rem; color: var(--text-secondary); }
+.dates b { color: var(--nsib-navy); font-weight: 800; }
+.themes { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .6rem; }
+.bTheme { background: #eef2f7; color: #334155; font-weight: 700; text-transform: none; letter-spacing: 0; font-size: .74rem; }
+
+/* phones: the dashboard table becomes stacked cards (each cell carries its column name in data-label) */
+@media (max-width: 640px) {
+  .tableWrap { overflow: visible; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .table tr { border: 1px solid var(--border-subtle); border-radius: 12px; margin-bottom: .7rem; padding: .3rem .2rem; background: #fff; }
+  .table td { display: grid; grid-template-columns: 45% 1fr; gap: .6rem; padding: .45rem .7rem; border-bottom: 1px solid #f1f5f9; }
+  .table td:last-child { border-bottom: 0; }
+  .table td::before { content: attr(data-label); font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--nsib-slate); }
+  .table td[colspan] { display: block; text-align: center; }
+  .table td[colspan]::before { content: none; }
+}
+
+/* phones: all four section tabs fit across the screen */
+@media (max-width: 560px) { .subnavIn { gap: 0; } .subnavIn a { padding: .8rem .55rem; font-size: .84rem; } }

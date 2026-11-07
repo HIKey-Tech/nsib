@@ -51,9 +51,29 @@ const TONE: Record<string, string> = {
   awaiting_ack: styles.bGrey, awaiting_response: styles.bGrey, ack_overdue: styles.bRed, response_overdue: styles.bRed,
   responded: styles.bPurple, assessed: styles.bGreen, closed: styles.bNavy,
 };
+// The NSIB status ("Awaiting Response", "Open, Acceptable Intent"…) is always shown, so this extra badge only appears
+// when it adds something: a response is in and being assessed, or the DG has approved disclosing it as overdue.
 export function StateBadge({ state, label }: { state: string; label: string }) {
-  if (state === "closed") return null; // the status badge already says it
+  if (state !== "responded" && state !== "ack_overdue" && state !== "response_overdue") return null;
   return <span className={`${styles.badge} ${TONE[state] ?? ""}`}>{label}</span>;
+}
+
+/** "Issued 3 March 2025 · Response due 1 June 2025 · 248 days outstanding" (or "Closed …"). */
+export function Dates({ r }: { r: PublicRec }) {
+  return (
+    <div className={styles.dates}>
+      <span><b>Issued</b> {fmt(r.issued_at)}</span>
+      <span><b>Response due</b> {fmt(r.response_due)}</span>
+      {r.days_outstanding != null
+        ? <span><b>{r.days_outstanding}</b> day{r.days_outstanding === 1 ? "" : "s"} outstanding</span>
+        : r.closed_at && <span><b>Closed</b> {fmt(r.closed_at)}</span>}
+    </div>
+  );
+}
+
+export function Themes({ r }: { r: PublicRec }) {
+  if (!r.themes.length) return null;
+  return <div className={styles.themes}>{r.themes.map((t) => <span key={t.code} className={`${styles.badge} ${styles.bTheme}`}>{t.label}</span>)}</div>;
 }
 
 export const MODE: Record<string, string> = { aviation: "Aviation", rail: "Rail", marine: "Marine", road: "Road" };
@@ -76,10 +96,11 @@ export function RecCard({ r }: { r: PublicRec }) {
       <div className={styles.meta}>
         <span><b>To:</b> {r.addressee.short_name ? `${r.addressee.short_name} — ` : ""}{r.addressee.name}</span>
         <span>{MODE[r.mode]}</span>
-        <span>Issued {fmt(r.issued_at)}</span>
         {r.occurrence.title && <span>{r.occurrence.title}</span>}
       </div>
       <p className={styles.excerpt}>{r.recommendation}</p>
+      <Dates r={r} />
+      <Themes r={r} />
     </Link>
   );
 }

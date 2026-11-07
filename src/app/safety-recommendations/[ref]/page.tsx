@@ -87,6 +87,7 @@ export default async function Page({ params }: Props) {
                 <dt>Mode</dt><dd>{MODE[r.mode]}</dd>
                 <dt>Date issued</dt><dd>{fmt(r.issued_at)}</dd>
                 <dt>Response due</dt><dd>{fmt(r.response_due)}</dd>
+                {r.days_outstanding != null ? <><dt>Days outstanding</dt><dd>{r.days_outstanding}</dd></> : r.closed_at && <><dt>Closed</dt><dd>{fmt(r.closed_at)}</dd></>}
                 <dt>Status</dt><dd>{r.status.label}</dd>
                 {r.themes.length > 0 && <><dt>Themes</dt><dd>{r.themes.map((t) => t.label).join(", ")}</dd></>}
                 {r.watchlist && <><dt>Watchlist</dt><dd><Link href={`/safety-recommendations/watchlist/${r.watchlist.slug}`} style={{ textDecoration: "underline" }}>{r.watchlist.title}</Link></dd></>}

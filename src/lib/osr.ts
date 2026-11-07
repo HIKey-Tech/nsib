@@ -55,6 +55,9 @@ export interface PublicRec {
   addressee: { name: string; short_name: string | null };
   issued_at: string | null;
   response_due: string | null;
+  /** days since issue while not closed; null once closed */
+  days_outstanding: number | null;
+  closed_at: string | null;
   stage: string;
   stage_label: string;
   response_state: string;

@@ -68,9 +68,9 @@ export default async function Page() {
               <tbody>
                 {st.by_addressee.map((a) => (
                   <tr key={a.full_name}>
-                    <td title={a.full_name}><b>{a.name}</b></td><td>{a.issued}</td><td>{a.responded}</td><td>{a.on_time}</td>
-                    <td><div className={rs.rate}><div className={rs.bar}><div className={rs.barFill} style={{ width: `${a.response_rate}%` }} /></div><b>{a.response_rate}%</b></div></td>
-                    <td>{a.overdue_disclosed || "—"}</td>
+                    <td data-label="Addressee" title={a.full_name}><b>{a.name}</b></td><td data-label="Issued">{a.issued}</td><td data-label="Responded">{a.responded}</td><td data-label="Within deadline">{a.on_time}</td>
+                    <td data-label="Response rate"><div className={rs.rate}><div className={rs.bar}><div className={rs.barFill} style={{ width: `${a.response_rate}%` }} /></div><b>{a.response_rate}%</b></div></td>
+                    <td data-label="Overdue (disclosed)">{a.overdue_disclosed || "—"}</td>
                   </tr>
                 ))}
                 {!st.by_addressee.length && <tr><td colSpan={6} style={{ textAlign: "center", padding: "2rem" }}>No data yet.</td></tr>}

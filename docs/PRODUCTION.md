@@ -22,11 +22,20 @@
 ## Office of Safety Recommendations (separate app)
 
 The Office of Safety Recommendations is a **separate application** (its own repo `nsib-osr`, Docker stack, database
-and logins) that shares this domain. The VPS web server routes `/safety-recommendations`, `/osr`, `/osr-portal`,
-`/api/osr` and `/osr-assets` to it and everything else to this website — see `nsib-osr/docs/DEPLOY.md` and its
-`deploy/Caddyfile.example` / `deploy/nginx.conf.example`. This site only links to it (menu, footer, homepage block,
-"N safety recs" beside reports, via the OSR's public API); if the OSR is down those pieces hide themselves.
-Optional fallback: build this app with `OSR_APP_URL=http://<host>:3001` to forward those paths itself.
+and logins) at its own address, `osr.nsib.gov.ng` (staff and addressee sign-in). **This website shows its public
+register** at `/safety-recommendations` (register, recommendation pages, dashboard, Watchlist, open data — pages in
+`src/app/safety-recommendations`, data from the OSR's public, read-only API via `src/lib/osr.ts`).
+
+To switch it on, set in `.env` and rebuild (`docker compose up -d --build`):
+
+| Setting | Value |
+|---|---|
+| `OSR_APP_URL` | `https://osr.nsib.gov.ng`: where the OSR answers (also a build arg: it sets up the `/api/osr/public/*` forwarding) |
+| `NEXT_PUBLIC_OSR_PORTAL_URL` | `https://osr.nsib.gov.ng`: dashboard link and `/osr` sign-in redirects |
+| `OSR_SITE_KEY` | the same value as in the OSR's `.env` (exempts this server from the public API's rate limit) |
+
+Unset, the pages say the register is temporarily unavailable, and the homepage block and "N safety recs" links hide
+themselves. The OSR side (DNS, web server block for `osr.nsib.gov.ng`) is in `nsib-osr/docs/DEPLOY.md`.
 
 ## First boot
 

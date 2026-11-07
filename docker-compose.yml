@@ -7,7 +7,7 @@ services:
     build:
       context: .
       args:
-        OSR_APP_URL: ${OSR_APP_URL:-}   # e.g. http://host.docker.internal:3001 — leave empty if the web server does the routing
+        OSR_APP_URL: ${OSR_APP_URL:-}   # the OSR app's address, e.g. https://osr.nsib.gov.ng — powers /safety-recommendations
         NEXT_PUBLIC_OSR_PORTAL_URL: ${NEXT_PUBLIC_OSR_PORTAL_URL:-}   # e.g. https://osr.nsib.gov.ng (dashboard link)
     restart: unless-stopped
     env_file: .env

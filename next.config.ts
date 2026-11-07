@@ -1,22 +1,28 @@
 import type { NextConfig } from "next";
 
-// The Office of Safety Recommendations is a SEPARATE app (own database and logins) that shares this domain.
-// In production the VPS web server routes these paths to it (see the OSR project's docs/DEPLOY.md). Setting
-// OSR_APP_URL makes this app forward them instead — handy for local testing of the combined site, and as a
-// fallback if you would rather not edit the web server config. Unset = no forwarding.
+// Office of Safety Recommendations (OSR): a SEPARATE app with its own database and logins, at its own address
+// (OSR_APP_URL, e.g. https://osr.nsib.gov.ng). This website shows its public register under /safety-recommendations
+// (pages in src/app/safety-recommendations, data read from the OSR's public API — see src/lib/osr.ts).
+// Here: the OSR's public data feed (used by the homepage block, the "N safety recs" links on report pages, the CSV
+// download and document downloads) and its sitemap are forwarded to it, and sign-in links go to the portal address.
+// These are fixed when the site is BUILT, so OSR_APP_URL is a Docker build arg as well as a runtime setting.
 const OSR_APP_URL = process.env.OSR_APP_URL?.replace(/\/$/, "");
-const OSR_PATHS = [
-  "/safety-recommendations", "/safety-recommendations/:path*",
-  "/osr", "/osr/:path*", "/osr-portal", "/osr-portal/:path*",
-  "/api/osr/:path*", "/osr-assets/:path*", "/osr-sitemap.xml",
-];
+const OSR_PORTAL_URL = (process.env.NEXT_PUBLIC_OSR_PORTAL_URL || OSR_APP_URL || "").replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // Document uploads to the OSR (up to 25MB) pass through the forwarder; the default buffer is 10MB.
-  ...(OSR_APP_URL ? { experimental: { proxyClientMaxBodySize: "30mb" } } : {}),
   async rewrites() {
-    return OSR_APP_URL ? OSR_PATHS.map((source) => ({ source, destination: `${OSR_APP_URL}${source}` })) : [];
+    if (!OSR_APP_URL) return [];
+    return [
+      { source: "/api/osr/public/:path*", destination: `${OSR_APP_URL}/api/osr/public/:path*` },
+      { source: "/osr-sitemap.xml", destination: `${OSR_APP_URL}/osr-sitemap.xml` },
+    ];
+  },
+  async redirects() {
+    if (!OSR_PORTAL_URL) return [];
+    return ["/osr", "/osr/:path*", "/osr-portal", "/osr-portal/:path*"].map((source) => ({
+      source, destination: `${OSR_PORTAL_URL}${source}`, permanent: false,
+    }));
   },
   // Self-contained server bundle for the Docker image (see Dockerfile).
   output: "standalone",

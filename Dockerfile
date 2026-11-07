@@ -5,8 +5,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-# Optional: forward the Office of Safety Recommendations paths to the separate OSR app from inside this app
-# (the alternative is routing them in the VPS web server). Baked in at build time — see next.config.ts.
+# The Office of Safety Recommendations app's address (e.g. https://osr.nsib.gov.ng). The /safety-recommendations pages
+# read it at runtime from .env; the data-feed forwarding and sign-in redirects are fixed at build time — see next.config.ts.
 ARG OSR_APP_URL=
 ENV OSR_APP_URL=$OSR_APP_URL
 # Where the dashboard's "Safety Recommendations" link sends staff, e.g. https://osr.nsib.gov.ng. Empty = /osr here.

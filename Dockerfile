@@ -9,6 +9,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # (the alternative is routing them in the VPS web server). Baked in at build time — see next.config.ts.
 ARG OSR_APP_URL=
 ENV OSR_APP_URL=$OSR_APP_URL
+# Where the dashboard's "Safety Recommendations" link sends staff, e.g. https://osr.nsib.gov.ng. Empty = /osr here.
+ARG NEXT_PUBLIC_OSR_PORTAL_URL=
+ENV NEXT_PUBLIC_OSR_PORTAL_URL=$NEXT_PUBLIC_OSR_PORTAL_URL
 # auth.ts refuses to load without JWT_SECRET in production — satisfy it for the
 # build's page-data collection only. Not baked in: the runtime stage doesn't set
 # it, so the real guard still fires if the deployment forgets the secret.

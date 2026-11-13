@@ -10,7 +10,7 @@
 .top { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .ref { font-family: ui-monospace, monospace; font-weight: 800; color: var(--nsib-navy); font-size: 0.9rem; }
 .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; background: #e2e8f0; color: #334155; }
-.badgeRed { background: var(--nsib-red); color: #fff; }
+.badgeRed { background: #4338ca; color: #fff; } /* Urgent: its own colour, never the red used for overdue */
 .meta { font-size: 0.82rem; color: var(--text-secondary); }
 .text { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.95rem; }
 .more { text-align: center; margin-top: 2.2rem; }

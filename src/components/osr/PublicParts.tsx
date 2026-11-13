@@ -48,13 +48,46 @@ export function Unavailable() {
 }
 
 const TONE: Record<string, string> = {
-  awaiting_ack: styles.bGrey, awaiting_response: styles.bGrey, ack_overdue: styles.bRed, response_overdue: styles.bRed,
-  responded: styles.bPurple, assessed: styles.bGreen, closed: styles.bNavy,
+  awaiting_ack: styles.bAmber, awaiting_response: styles.bAmber, ack_overdue: styles.bRed, response_overdue: styles.bRed, update_overdue: styles.bRed,
+  responded: styles.bAmber, assessed: styles.bAmber, closed: styles.bGreen,
 };
+
+/**
+ * Traffic-light colour of the status badge — the same rule as the OSR app's statusTone(), so the register looks the
+ * same wherever it is shown: green = closed with an acceptable outcome, grey = closed unacceptable / no response,
+ * red = overdue (only when the DG has approved publishing it), amber = in progress.
+ */
+export function statusClass(r: PublicRec): string {
+  const code = r.status.code;
+  if (code === "closed_unacceptable_action" || code === "closed_no_response") return styles.bGrey;
+  if (r.stage === "closed" || code.startsWith("closed_")) return styles.bGreen;
+  if (["ack_overdue", "response_overdue", "update_overdue"].includes(r.response_state)) return styles.bRed;
+  return styles.bAmber;
+}
+export function StatusBadge({ r }: { r: PublicRec }) {
+  return <span className={`${styles.badge} ${statusClass(r)}`}>{r.status.label}</span>;
+}
+
+/** Colour key for the status badges on the public register. */
+export function PublicLegend() {
+  const items: [string, string, string][] = [
+    ["#dcfce7", "Closed", "concluded with an acceptable outcome"],
+    ["#fef3c7", "In progress", "response pending or under assessment, or open and being tracked"],
+    ["#dc2626", "Overdue", "shown only where the DG/CEO has approved publishing it"],
+    ["#e2e8f0", "No successful outcome", "closed as unacceptable action or with no response"],
+    ["#4338ca", "Urgent", "an Urgent Safety Recommendation"],
+  ];
+  return (
+    <div className={styles.keyBar} role="note" aria-label="Colour key" data-testid="legend">
+      <b>Colour key</b>
+      {items.map(([c, name, desc]) => <span key={name} title={desc}><i style={{ background: c }} />{name}</span>)}
+    </div>
+  );
+}
 // The NSIB status ("Awaiting Response", "Open, Acceptable Intent"…) is always shown, so this extra badge only appears
 // when it adds something: a response is in and being assessed, or the DG has approved disclosing it as overdue.
 export function StateBadge({ state, label }: { state: string; label: string }) {
-  if (state !== "responded" && state !== "ack_overdue" && state !== "response_overdue") return null;
+  if (state !== "responded" && state !== "ack_overdue" && state !== "response_overdue" && state !== "update_overdue") return null;
   return <span className={`${styles.badge} ${TONE[state] ?? ""}`}>{label}</span>;
 }
 
@@ -64,9 +97,10 @@ export function Dates({ r }: { r: PublicRec }) {
     <div className={styles.dates}>
       <span><b>Issued</b> {fmt(r.issued_at)}</span>
       <span><b>Response due</b> {fmt(r.response_due)}</span>
-      {r.days_outstanding != null
-        ? <span><b>{r.days_outstanding}</b> day{r.days_outstanding === 1 ? "" : "s"} outstanding</span>
-        : r.closed_at && <span><b>Closed</b> {fmt(r.closed_at)}</span>}
+      {r.days_outstanding != null && (r.days_outstanding_final
+        ? <span>Responded in <b>{r.days_outstanding}</b> day{r.days_outstanding === 1 ? "" : "s"}</span>
+        : <span><b>{r.days_outstanding}</b> day{r.days_outstanding === 1 ? "" : "s"} outstanding</span>)}
+      {r.closed_at && <span><b>Closed</b> {fmt(r.closed_at)}</span>}
     </div>
   );
 }
@@ -86,10 +120,10 @@ export function RecCard({ r }: { r: PublicRec }) {
       <div className={styles.cardTop}>
         <span className={styles.ref}>{r.ref_no}</span>
         <span className={styles.badges}>
-          {r.type === "urgent" && <span className={`${styles.badge} ${styles.bRed}`}>Urgent</span>}
+          {r.type === "urgent" && <span className={`${styles.badge} ${styles.bUrgent}`}>Urgent</span>}
           {r.global_concern && <span className={`${styles.badge} ${styles.bPurple}`}>Global concern</span>}
           {r.watchlist && <span className={`${styles.badge} ${styles.bAmber}`}>Watchlist</span>}
-          <span className={`${styles.badge} ${styles.bBlue}`}>{r.status.label}</span>
+          <StatusBadge r={r} />
           <StateBadge state={r.response_state} label={r.response_state_label} />
         </span>
       </div>

@@ -56,7 +56,10 @@ export interface PublicRec {
   issued_at: string | null;
   response_due: string | null;
   /** days since issue while not closed; null once closed */
+  /** days from issue to the first response (final), or still counting while no response is in; null if closed without one */
   days_outstanding: number | null;
+  /** true once the addressee has responded: days_outstanding is then the final "responded in N days" figure */
+  days_outstanding_final?: boolean;
   closed_at: string | null;
   stage: string;
   stage_label: string;

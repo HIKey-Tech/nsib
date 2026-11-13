@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { pageMeta } from "@/lib/site";
 import { listRecommendations, getFacets, portalUrl, OsrUnavailable } from "@/lib/osr";
-import { Hero, SubNav, RecCard, Unavailable, rs, MODE } from "@/components/osr/PublicParts";
+import { Hero, SubNav, RecCard, PublicLegend, Unavailable, rs, MODE } from "@/components/osr/PublicParts";
 
 export const dynamic = "force-dynamic";
 export const metadata = pageMeta({
@@ -75,6 +75,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
 
         {reportNo && <p className={rs.count}>Showing recommendations arising from investigation report <b>{reportNo}</b>. <Link href="/safety-recommendations" style={{ textDecoration: "underline" }}>Show all</Link></p>}
         <p className={rs.count} aria-live="polite">{total === 0 ? "No recommendations match." : `${total} recommendation${total === 1 ? "" : "s"}`}</p>
+        <PublicLegend />
         <div className={rs.cards}>
           {list.data.map((r) => <RecCard key={r.ref_no} r={r} />)}
           {list.data.length === 0 && <div className={rs.empty}>{!filtered ? "No recommendations have been published yet." : "Nothing matches those filters. Try widening your search."}</div>}

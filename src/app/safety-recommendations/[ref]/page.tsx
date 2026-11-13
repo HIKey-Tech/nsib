@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/site";
 import { getRecommendation, OsrUnavailable } from "@/lib/osr";
-import { Hero, SubNav, StateBadge, Unavailable, rs, MODE, fmt } from "@/components/osr/PublicParts";
+import { Hero, SubNav, StateBadge, StatusBadge, PublicLegend, Unavailable, rs, MODE, fmt } from "@/components/osr/PublicParts";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ ref: string }> };
@@ -45,10 +45,11 @@ export default async function Page({ params }: Props) {
       </Hero>
       <SubNav active="register" />
       <div className={`container ${rs.body}`}>
+        <PublicLegend />
         <div className={rs.badges} style={{ marginBottom: "1.2rem" }}>
-          {r.type === "urgent" && <span className={`${rs.badge} ${rs.bRed}`}>Urgent</span>}
+          {r.type === "urgent" && <span className={`${rs.badge} ${rs.bUrgent}`}>Urgent</span>}
           {r.global_concern && <span className={`${rs.badge} ${rs.bPurple}`}>Safety Recommendation of Global Concern</span>}
-          <span className={`${rs.badge} ${rs.bBlue}`}>{r.status.label}</span>
+          <StatusBadge r={r} />
           <StateBadge state={r.response_state} label={r.response_state_label} />
         </div>
         <div className={rs.detailGrid}>
@@ -67,7 +68,7 @@ export default async function Page({ params }: Props) {
             {r.classification && (
               <section className={rs.panel}>
                 <h2>NSIB’s assessment</h2>
-                <p><span className={`${rs.badge} ${rs.bGreen}`}>{r.classification.label}</span></p>
+                <p><span className={`${rs.badge} ${r.classification.code.startsWith("closed_") && ["closed_unacceptable_action", "closed_no_response"].includes(r.classification.code) ? rs.bGrey : r.classification.code.startsWith("closed_") ? rs.bGreen : rs.bAmber}`}>{r.classification.label}</span></p>
               </section>
             )}
             {r.documents.length > 0 && (
@@ -87,7 +88,8 @@ export default async function Page({ params }: Props) {
                 <dt>Mode</dt><dd>{MODE[r.mode]}</dd>
                 <dt>Date issued</dt><dd>{fmt(r.issued_at)}</dd>
                 <dt>Response due</dt><dd>{fmt(r.response_due)}</dd>
-                {r.days_outstanding != null ? <><dt>Days outstanding</dt><dd>{r.days_outstanding}</dd></> : r.closed_at && <><dt>Closed</dt><dd>{fmt(r.closed_at)}</dd></>}
+                {r.days_outstanding != null && <><dt>{r.days_outstanding_final ? "Time to respond" : "Days outstanding"}</dt><dd>{r.days_outstanding_final ? `Responded in ${r.days_outstanding} day${r.days_outstanding === 1 ? "" : "s"}` : r.days_outstanding}</dd></>}
+                {r.closed_at && <><dt>Closed</dt><dd>{fmt(r.closed_at)}</dd></>}
                 <dt>Status</dt><dd>{r.status.label}</dd>
                 {r.themes.length > 0 && <><dt>Themes</dt><dd>{r.themes.map((t) => t.label).join(", ")}</dd></>}
                 {r.watchlist && <><dt>Watchlist</dt><dd><Link href={`/safety-recommendations/watchlist/${r.watchlist.slug}`} style={{ textDecoration: "underline" }}>{r.watchlist.title}</Link></dd></>}

@@ -25,7 +25,7 @@
 .cards { display: flex; flex-direction: column; gap: .9rem; }
 .card { background: #fff; border: 1px solid var(--border-subtle); border-left: 4px solid var(--nsib-navy); border-radius: 12px; padding: 1.1rem 1.3rem; box-shadow: var(--shadow-sm); display: block; transition: box-shadow .15s, transform .15s; }
 a.card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.cardUrgent { border-left-color: var(--nsib-red); }
+.cardUrgent { border-left-color: #4338ca; }
 .cardTop { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; margin-bottom: .5rem; }
 .ref { font-family: ui-monospace, monospace; font-weight: 800; color: var(--nsib-navy); font-size: .95rem; }
 .meta { font-size: .83rem; color: var(--text-secondary); display: flex; gap: .4rem 1rem; flex-wrap: wrap; margin-bottom: .5rem; }
@@ -34,6 +34,11 @@ a.card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .badge { display: inline-block; padding: .16rem .6rem; border-radius: 999px; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; background: #e2e8f0; color: #334155; }
 .bNavy { background: var(--nsib-navy); color: #fff; } .bRed { background: var(--nsib-red); color: #fff; }
 .bAmber { background: #fef3c7; color: #92400e; } .bGreen { background: #dcfce7; color: #166534; }
+.bUrgent { background: #4338ca; color: #fff; }
+.keyBar { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; align-items: center; font-size: .8rem; color: #475569; margin: 0 0 1rem; padding: .55rem .8rem; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.keyBar b { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: #334155; }
+.keyBar span { display: inline-flex; align-items: center; gap: .4rem; }
+.keyBar i { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; border: 1px solid rgba(0,0,0,.12); }
 .bBlue { background: #dbeafe; color: #1e40af; } .bPurple { background: #ede9fe; color: #5b21b6; } .bGrey { background: #e2e8f0; color: #475569; }
 .pager { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; font-size: .9rem; }
 .empty { background: #fff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 3rem 1rem; text-align: center; color: var(--text-secondary); }
